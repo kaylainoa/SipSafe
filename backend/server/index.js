@@ -7,6 +7,7 @@ const authRoutes = require("./routes/drinklogs");
 const drinkRoutes = require("./routes/drinks");
 const drinkLogRoutes = require("./routes/drinklogs");
 const identifyDrinkRoutes = require("./routes/identifyDrink");
+const alertRoutes = require("./routes/alerts");
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/drinks", drinkRoutes);
 app.use("/api/drinklogs", drinkLogRoutes);
 app.use("/api/identifyDrink", identifyDrinkRoutes);
+app.use("/api/alerts", alertRoutes);
 
 // Health check
 app.get("/", (req, res) => {

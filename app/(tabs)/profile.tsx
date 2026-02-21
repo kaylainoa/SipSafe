@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router"; // 1. Import router
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -14,24 +14,26 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  DEFAULT_PROFILE,
+  type EmergencyContact,
+  type ProfileData,
+  loadProfileData,
+  saveProfileData,
+} from "@/lib/profileStorage";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface EmergencyContact {
-  label: string;
-  phone: string;
-}
-
-interface ProfileData {
-  name: string;
-  email: string;
-  dob: string;
-  weight: string;
-  cell: string;
-  address: string;
-  bloodType: string;
-  emergencyContacts: EmergencyContact[];
-}
+const CARRIER_OPTIONS = [
+  { label: "AT&T", value: "att" },
+  { label: "Verizon", value: "verizon" },
+  { label: "T-Mobile", value: "tmobile" },
+  { label: "Sprint", value: "sprint" },
+  { label: "Boost", value: "boost" },
+  { label: "Cricket", value: "cricket" },
+  { label: "US Cellular", value: "uscellular" },
+  { label: "MetroPCS", value: "metropcs" },
+  { label: "Virgin", value: "virgin" },
+  { label: "Visible", value: "visible" },
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -74,10 +76,16 @@ const EditModal = ({
 }: {
   visible: boolean;
   profile: ProfileData;
-  onSave: (p: ProfileData) => void;
+  onSave: (p: ProfileData) => void | Promise<void>;
   onClose: () => void;
 }) => {
   const [draft, setDraft] = useState<ProfileData>(profile);
+
+  useEffect(() => {
+    if (visible) {
+      setDraft(profile);
+    }
+  }, [profile, visible]);
 
   const update = (key: keyof ProfileData, value: string) =>
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -95,7 +103,7 @@ const EditModal = ({
     }
     setDraft((prev) => ({
       ...prev,
-      emergencyContacts: [...prev.emergencyContacts, { label: "", phone: "" }],
+      emergencyContacts: [...prev.emergencyContacts, { label: "", phone: "", carrier: "" }],
     }));
   };
 
@@ -104,8 +112,8 @@ const EditModal = ({
     setDraft((prev) => ({ ...prev, emergencyContacts: contacts }));
   };
 
-  const handleSave = () => {
-    onSave(draft);
+  const handleSave = async () => {
+    await onSave(draft);
     onClose();
   };
 
@@ -185,6 +193,29 @@ const EditModal = ({
                     keyboardType="phone-pad"
                     selectionColor="#D4622A"
                   />
+                  <Text style={styles.carrierLabel}>Carrier</Text>
+                  <View style={styles.carrierGrid}>
+                    {CARRIER_OPTIONS.map((carrier) => {
+                      const selected = contact.carrier === carrier.value;
+                      return (
+                        <TouchableOpacity
+                          key={`${i}-${carrier.value}`}
+                          style={[styles.carrierChip, selected && styles.carrierChipSelected]}
+                          onPress={() => updateContact(i, "carrier", carrier.value)}
+                          activeOpacity={0.8}
+                        >
+                          <Text
+                            style={[
+                              styles.carrierChipText,
+                              selected && styles.carrierChipTextSelected,
+                            ]}
+                          >
+                            {carrier.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
               ))}
               <TouchableOpacity style={styles.addContactBtn} onPress={addContact}>
@@ -194,7 +225,7 @@ const EditModal = ({
               <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
                 <Text style={styles.saveBtnText}>Save Changes</Text>
               </TouchableOpacity>
-              <div style={{ height: 32 }} />
+              <View style={{ height: 32 }} />
             </ScrollView>
           </View>
         </View>
@@ -208,21 +239,24 @@ const EditModal = ({
 export default function ProfileScreen() {
   const router = useRouter(); // 2. Initialize router
   
-  const [profile, setProfile] = useState<ProfileData>({
-    name: "User",
-    email: "user@email.com",
-    dob: "01/01/2000",
-    weight: "130",
-    cell: "123-456-7890",
-    address: "Broward Hall, Gainesville FL, 32612",
-    bloodType: "O+",
-    emergencyContacts: [
-      { label: "Mom", phone: "123 456 7890" },
-      { label: "BFF", phone: "123 456 7890" },
-    ],
-  });
+  const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
 
   const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    loadProfileData().then((saved) => {
+      if (mounted) setProfile(saved);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleSaveProfile = async (nextProfile: ProfileData) => {
+    setProfile(nextProfile);
+    await saveProfileData(nextProfile);
+  };
 
   // 3. Logout logic
   const handleLogout = () => {
@@ -272,7 +306,7 @@ export default function ProfileScreen() {
             <View style={styles.contactsRight}>
               {profile.emergencyContacts.map((c, i) => (
                 <Text key={i} style={styles.infoValue}>
-                  {c.label} – {c.phone}
+                  {c.label} – {c.phone} ({c.carrier || "carrier?"})
                 </Text>
               ))}
             </View>
@@ -300,7 +334,7 @@ export default function ProfileScreen() {
       <EditModal
         visible={modalVisible}
         profile={profile}
-        onSave={setProfile}
+        onSave={handleSaveProfile}
         onClose={() => setModalVisible(false)}
       />
     </SafeAreaView>
@@ -479,6 +513,38 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     letterSpacing: 0.6,
     fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+  },
+  carrierLabel: {
+    color: MUTED,
+    fontSize: 12,
+    marginBottom: 6,
+    letterSpacing: 0.6,
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+  },
+  carrierGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  carrierChip: {
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: "#252525",
+  },
+  carrierChipSelected: {
+    borderColor: ORANGE,
+    backgroundColor: "#2B1A11",
+  },
+  carrierChipText: {
+    color: TEXT,
+    fontSize: 12,
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+  },
+  carrierChipTextSelected: {
+    color: ORANGE,
   },
   textInput: {
     backgroundColor: "#252525",

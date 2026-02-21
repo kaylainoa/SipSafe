@@ -33,9 +33,9 @@
  */
 
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
-// ...existing code...
 import { speakText } from "@/lib/elevenlabsTTS";
 import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
+import { getEmergencyContactsFromStorage } from "@/lib/profileStorage";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -43,6 +43,7 @@ import {
     Alert,
     Animated,
     Dimensions,
+    Linking,
     Modal,
     PanResponder,
     Platform,
@@ -811,12 +812,42 @@ export default function DrinkTrackerFAB({
       },
     ]);
 
-  const sendAlert = () =>
-    Alert.alert(
-      "ALERT SENT",
-      "Emergency contacts notified with your location.",
-      [{ text: "OK" }],
-    );
+  const sendAlert = useCallback(async () => {
+    const alertMessage = `SipSafe alert: I may need help. Current BAC estimate: ${bac.toFixed(3)}%. Time: ${new Date().toLocaleString()}.`;
+    try {
+      const contacts = await getEmergencyContactsFromStorage();
+      if (contacts.length === 0) {
+        Alert.alert(
+          "No emergency contacts",
+          "Add at least one emergency contact in Profile before sending alerts.",
+          [{ text: "OK" }],
+        );
+        return;
+      }
+      const recipients = contacts
+        .map((c) => c.phone.replace(/[^\d+]/g, ""))
+        .filter((v) => v.length > 0);
+      if (recipients.length === 0) {
+        Alert.alert("No emergency contacts", "Add emergency contact phone numbers in Profile.", [{ text: "OK" }]);
+        return;
+      }
+      const queryPrefix = Platform.OS === "ios" ? "&" : "?";
+      const smsUrl = `sms:${recipients.join(",")}${queryPrefix}body=${encodeURIComponent(alertMessage)}`;
+      const canOpen = await Linking.canOpenURL(smsUrl);
+      if (!canOpen) {
+        Alert.alert("SMS unavailable", "Could not open the Messages app on this device.", [{ text: "OK" }]);
+        return;
+      }
+      await Linking.openURL(smsUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error.";
+      Alert.alert(
+        "Alert failed",
+        message,
+        [{ text: "OK" }],
+      );
+    }
+  }, [bac]);
 
   const status = getBACStatus(bac);
   const totalStd = drinks.reduce((s, d) => s + d.standardDrinks, 0);
