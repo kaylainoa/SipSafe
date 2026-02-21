@@ -29,7 +29,6 @@ function HomePageContent() {
   return (
     <View style={styles.container}>
       <View style={styles.nav}>
-        {/* Restored Original Pill Styling */}
         <View style={styles.inputPill}>
           <View style={styles.circleIcon} />
           <Text style={styles.inputPillText}>How much did you drink?</Text>
@@ -74,6 +73,16 @@ function HomePageContent() {
             ))}
           </View>
         </View>
+
+        {/* --- NEW RECEIPT BUTTON --- */}
+        <TouchableOpacity 
+          style={styles.receiptButton} 
+          onPress={() => router.push("/receipt")}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.receiptButtonText}>VIEW NIGHT'S RECEIPT</Text>
+          <Text style={styles.receiptButtonArrow}>→</Text>
+        </TouchableOpacity>
 
         <View style={styles.featureGrid}>
           {FEATURES.map((f) => (
@@ -135,11 +144,36 @@ const styles = StyleSheet.create({
   statCard: { backgroundColor: '#111', width: '48%', padding: 18, borderRadius: 20, height: 110, justifyContent: 'center' },
   statTitleSpray: { color: '#fff', fontSize: 18, fontFamily: 'RubikSprayPaint', marginBottom: 5 },
   statValueRubik: { color: '#666', fontSize: 14, fontFamily: 'Rubik' },
-  chartCard: { backgroundColor: '#111', borderRadius: 25, padding: 20, marginBottom: 20 },
+  chartCard: { backgroundColor: '#111', borderRadius: 25, padding: 20, marginBottom: 15 },
   chartTitleSpray: { color: '#fff', fontSize: 18, fontFamily: 'RubikSprayPaint', marginBottom: 20 },
   chartContainer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 80, paddingHorizontal: 5 },
   chartColumn: { alignItems: 'center', flex: 1 },
   bar: { width: 12, backgroundColor: '#f58a4e', borderRadius: 4 },
+  
+  // --- NEW STYLES ---
+  receiptButton: {
+    backgroundColor: '#111',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#333'
+  },
+  receiptButtonText: {
+    color: '#f58a4e', // Matches your orange theme
+    fontSize: 18,
+    fontFamily: 'RubikSprayPaint',
+  },
+  receiptButtonArrow: {
+    color: '#f58a4e',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  // --- END NEW STYLES ---
+
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   featureCard: { backgroundColor: '#111', width: '48%', padding: 15, borderRadius: 20, marginBottom: 15 },
   featureTitle: { color: '#fff', fontFamily: 'RubikBold', fontSize: 14, marginTop: 10 },
