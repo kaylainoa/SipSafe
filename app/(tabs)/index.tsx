@@ -53,11 +53,10 @@ function HomePageContent() {
 
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
           {/* Tagline like Figma */}
-          <Text style={styles.tagline}>we have nothing to lose</Text>
 
           <View style={styles.logoContainer}>
             <Text style={styles.logoTextGlitch}>SIP</Text>
-            <Text style={[styles.logoTextGlitch, { marginLeft: 45, marginTop: -15 }]}>SAFE</Text>
+            <Text style={[styles.logoTextGlitch, { marginLeft: 1, marginTop: -15 }]}>SAFE</Text>
           </View>
 
           <View style={styles.bacContainer}>
@@ -107,7 +106,6 @@ function HomePageContent() {
                 style={styles.featureCard}
                 onPress={() => router.push(f.route as any)}
               >
-                <Text style={{ fontSize: 24 }}>{f.icon}</Text>
                 <Text style={styles.featureTitle}>{f.title}</Text>
                 <Text style={styles.featureDesc}>{f.desc}</Text>
               </TouchableOpacity>
@@ -115,7 +113,6 @@ function HomePageContent() {
           </View>
 
           {/* Bottom tagline like Figma */}
-          <Text style={styles.bottomTagline}>be wild and have fun</Text>
         </ScrollView>
       </View>
     </ImageBackground>
