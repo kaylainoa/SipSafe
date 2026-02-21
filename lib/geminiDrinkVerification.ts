@@ -1,6 +1,6 @@
 type SupportedMimeType = "image/jpeg" | "image/png" | "image/webp";
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
-const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-pro";
 let cachedModel: string | null = null;
 
 export interface DrinkVerificationResult {
@@ -25,7 +25,11 @@ interface GeminiRawResponse {
 }
 
 function sanitizeModelJson(text: string): string {
-  const cleaned = text.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/, "");
+  const cleaned = text
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/, "");
   const firstBrace = cleaned.indexOf("{");
   const lastBrace = cleaned.lastIndexOf("}");
   if (firstBrace >= 0 && lastBrace > firstBrace) {
@@ -40,12 +44,19 @@ function toSafeString(input: unknown, fallback = ""): string {
 
 function toSafeStringArray(input: unknown): string[] {
   if (!Array.isArray(input)) return [];
-  return input.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean);
+  return input
+    .filter((item) => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function toConciseVoiceMessage(input: string, fallback: string): string {
-  const base = toSafeString(input) || toSafeString(fallback) || "Unable to verify drink.";
-  const sentences = base.split(/[.!?]/).map((part) => part.trim()).filter(Boolean);
+  const base =
+    toSafeString(input) || toSafeString(fallback) || "Unable to verify drink.";
+  const sentences = base
+    .split(/[.!?]/)
+    .map((part) => part.trim())
+    .filter(Boolean);
   const combined = sentences.slice(0, 2).join(". ").trim() || base;
   const words = combined.split(/\s+/).filter(Boolean).slice(0, 20);
   const concise = words.join(" ").trim();
@@ -54,7 +65,9 @@ function toConciseVoiceMessage(input: string, fallback: string): string {
 
 async function resolveGeminiModel(apiKey: string): Promise<string> {
   if (cachedModel) return cachedModel;
-  const listResp = await fetch(`${GEMINI_API_BASE}/models?key=${encodeURIComponent(apiKey)}`);
+  const listResp = await fetch(
+    `${GEMINI_API_BASE}/models?key=${encodeURIComponent(apiKey)}`,
+  );
   if (!listResp.ok) {
     const err = await listResp.text();
     throw new Error(`Gemini model discovery failed: ${listResp.status} ${err}`);
@@ -62,20 +75,21 @@ async function resolveGeminiModel(apiKey: string): Promise<string> {
 
   const listData = await listResp.json();
   const modelNames: string[] = (listData?.models ?? [])
-    .filter((m: { name?: string; supportedGenerationMethods?: string[] }) =>
-      Array.isArray(m?.supportedGenerationMethods) &&
-      m.supportedGenerationMethods.includes("generateContent")
+    .filter(
+      (m: { name?: string; supportedGenerationMethods?: string[] }) =>
+        Array.isArray(m?.supportedGenerationMethods) &&
+        m.supportedGenerationMethods.includes("generateContent"),
     )
     .map((m: { name?: string }) => (m.name ?? "").replace(/^models\//, ""))
     .filter(Boolean);
 
   const fromList =
-    modelNames.find((name) => name.includes("2.0-flash")) ??
-    modelNames.find((name) => name.includes("flash")) ??
-    modelNames[0];
+    modelNames.find((name) => name.includes("pro")) ?? modelNames[0];
 
   if (!fromList) {
-    throw new Error("No Gemini model with generateContent support was found for this API key.");
+    throw new Error(
+      "No Gemini model with generateContent support was found for this API key.",
+    );
   }
 
   cachedModel = fromList;
@@ -87,7 +101,7 @@ async function generateWithModel(
   model: string,
   prompt: string,
   base64Image: string,
-  mimeType: SupportedMimeType
+  mimeType: SupportedMimeType,
 ): Promise<Response> {
   return fetch(
     `${GEMINI_API_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
@@ -110,17 +124,17 @@ async function generateWithModel(
         ],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 220,
+          maxOutputTokens: 500,
         },
       }),
-    }
+    },
   );
 }
 
 export async function verifyDrinkWithGemini(
   base64Image: string,
   expectedDrinkType: string,
-  mimeType: SupportedMimeType = "image/jpeg"
+  mimeType: SupportedMimeType = "image/jpeg",
 ): Promise<DrinkVerificationResult> {
   const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
@@ -132,7 +146,9 @@ export async function verifyDrinkWithGemini(
       spoofingLikely: true,
       druggingLikely: true,
       summary: "Gemini key is missing. Verification could not run.",
-      concerns: ["Add EXPO_PUBLIC_GEMINI_API_KEY to enable photo verification."],
+      concerns: [
+        "Add EXPO_PUBLIC_GEMINI_API_KEY to enable photo verification.",
+      ],
       voiceMessage: "Verification failed because Gemini is not configured.",
     };
   }
@@ -164,12 +180,24 @@ export async function verifyDrinkWithGemini(
 
   const configuredModel = process.env.EXPO_PUBLIC_GEMINI_MODEL?.trim();
   const primaryModel = cachedModel || configuredModel || DEFAULT_GEMINI_MODEL;
-  let response = await generateWithModel(apiKey, primaryModel, prompt, base64Image, mimeType);
+  let response = await generateWithModel(
+    apiKey,
+    primaryModel,
+    prompt,
+    base64Image,
+    mimeType,
+  );
 
   if (!response.ok && (response.status === 404 || response.status === 400)) {
     const discoveredModel = await resolveGeminiModel(apiKey);
     if (discoveredModel !== primaryModel) {
-      response = await generateWithModel(apiKey, discoveredModel, prompt, base64Image, mimeType);
+      response = await generateWithModel(
+        apiKey,
+        discoveredModel,
+        prompt,
+        base64Image,
+        mimeType,
+      );
     }
   }
 
@@ -179,21 +207,33 @@ export async function verifyDrinkWithGemini(
   }
 
   const data = await response.json();
+  // Debug: Log the full Gemini API response
+  console.log("Gemini API response:", JSON.stringify(data, null, 2));
   const rawText: string =
-    data?.candidates?.[0]?.content?.parts?.find((part: { text?: string }) => typeof part?.text === "string")?.text ?? "";
+    data?.candidates?.[0]?.content?.parts?.find(
+      (part: { text?: string }) => typeof part?.text === "string",
+    )?.text ?? "";
 
   if (!rawText) {
     throw new Error("Gemini response was empty.");
   }
 
-  const parsed = JSON.parse(sanitizeModelJson(rawText)) as Partial<GeminiRawResponse>;
+  const parsed = JSON.parse(
+    sanitizeModelJson(rawText),
+  ) as Partial<GeminiRawResponse>;
 
   const match = Boolean(parsed.match);
   const spoofingLikely = Boolean(parsed.spoofingLikely);
   const druggingLikely = Boolean(parsed.druggingLikely);
   const concerns = toSafeStringArray(parsed.concerns);
-  const summary = toSafeString(parsed.summary, "Unable to verify this drink from the photo.");
-  const matchedDrinkType = toSafeString(parsed.matchedDrinkType, "UNKNOWN").toUpperCase();
+  const summary = toSafeString(
+    parsed.summary,
+    "Unable to verify this drink from the photo.",
+  );
+  const matchedDrinkType = toSafeString(
+    parsed.matchedDrinkType,
+    "UNKNOWN",
+  ).toUpperCase();
 
   // Allow common mixed-drink presentation in red solo cups when COCKTAIL is expected.
   const isCocktailSoloCupMatch =
@@ -208,7 +248,10 @@ export async function verifyDrinkWithGemini(
       : druggingLikely
         ? "Warning. Possible roofie or spiking signs detected."
         : "Drink verified.";
-  const voiceMessage = toConciseVoiceMessage(toSafeString(parsed.voiceMessage), voiceFallback);
+  const voiceMessage = toConciseVoiceMessage(
+    toSafeString(parsed.voiceMessage),
+    voiceFallback,
+  );
 
   return {
     allowed: isExpectedDrinkMatch && !spoofingLikely && !druggingLikely,
