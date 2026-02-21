@@ -1,98 +1,64 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const FEATURES = [
+  { icon: "🍹", title: "AI Scanner", desc: "Identify drinks" },
+  { icon: "📊", title: "Dashboard", desc: "Track trends" },
+  { icon: "🔔", title: "Alerts", desc: "Notify crew" },
+  { icon: "🎙️", title: "Voice AI", desc: "Safety guidance" },
+];
 
-export default function HomeScreen() {
+export default function HomePage() {
+  const router = useRouter();
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.container}>
+      <View style={styles.nav}>
+        <Text style={styles.logo}>Sip<Text style={{color: '#e8541a'}}>Safe</Text></Text>
+        <TouchableOpacity onPress={() => router.push("/profile")}>
+          <Text style={styles.navBtn}>Profile</Text>
+        </TouchableOpacity>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <ScrollView contentContainerStyle={styles.body}>
+        <Text style={styles.welcome}>Hey, Friend 👋</Text>
+        <Text style={styles.desc}>Your AI safety companion is ready.</Text>
+
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}><Text style={styles.statNum}>2</Text><Text style={styles.statLabel}>Logged</Text></View>
+          <View style={styles.statCard}><Text style={[styles.statNum, {color: '#4ade80'}]}>92%</Text><Text style={styles.statLabel}>Safety</Text></View>
+          <View style={styles.statCard}><Text style={styles.statNum}>3</Text><Text style={styles.statLabel}>Crew</Text></View>
+        </View>
+
+        <View style={styles.grid}>
+          {FEATURES.map((f) => (
+            <View key={f.title} style={styles.featureCard}>
+              <Text style={{fontSize: 30}}>{f.icon}</Text>
+              <Text style={styles.featureTitle}>{f.title}</Text>
+              <Text style={styles.featureDesc}>{f.desc}</Text>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  container: { flex: 1, backgroundColor: '#111' },
+  nav: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, paddingTop: 60, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#222' },
+  logo: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  navBtn: { color: '#666', fontSize: 14 },
+  body: { padding: 20 },
+  welcome: { color: '#fff', fontSize: 28, fontWeight: 'bold' },
+  desc: { color: '#666', marginTop: 5, marginBottom: 20 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  statCard: { backgroundColor: '#1a1a1a', padding: 15, borderRadius: 15, width: '31%', alignItems: 'center' },
+  statNum: { color: '#e8541a', fontSize: 20, fontWeight: 'bold' },
+  statLabel: { color: '#444', fontSize: 10, marginTop: 5 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  featureCard: { backgroundColor: '#1a1a1a', width: '48%', padding: 20, borderRadius: 20, marginBottom: 15 },
+  featureTitle: { color: '#fff', fontWeight: 'bold', marginTop: 10 },
+  featureDesc: { color: '#555', fontSize: 12, marginTop: 5 }
 });
