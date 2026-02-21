@@ -46,4 +46,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ imageBase64 }),
     }),
+
+  // Identify / verify drink (spoofing check)
+  identifyDrink: (base64Image: string, mimeType: string = "image/jpeg") =>
+    request("/api/identifyDrink", {
+      method: "POST",
+      body: JSON.stringify({ base64Image, mimeType }),
+    }),
 };
