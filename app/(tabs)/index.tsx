@@ -47,19 +47,16 @@ function HomePageContent() {
 
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
           
-          {/* SIP SAFE Logo */}
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoTextGlitch}>SIP</Text>
-            <Text style={[styles.logoTextGlitch, { marginLeft: 1, marginTop: -15 }]}>SAFE</Text>
-          </View>
-
-          {/* BAC Container - Shifted even lower with marginTop: 100 */}
+          {/* TOP SPACER: This pushes everything down from the top nav */}
+          <View style={styles.topSpacer} />
+          
+          {/* BAC Container - Shifted even lower */}
           <View style={styles.bacContainer}>
             <Text style={styles.bacValueSpray}>0.000%</Text>
             <Text style={styles.bacLabelSpray}>EST. BAC</Text>
           </View>
 
-          {/* Shifted down all buttons via a wrapper or specific margin */}
+          {/* Action Buttons Wrapper */}
           <View style={styles.actionButtonsWrapper}>
             <View style={styles.statsRow}>
               <View style={styles.statCard}>
@@ -144,62 +141,64 @@ const styles = StyleSheet.create({
   circleIcon: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#555', marginRight: 10 },
   inputPillText: { color: '#999', fontSize: 14, fontFamily: 'InstrumentSans' },
   body: { paddingHorizontal: 20, paddingBottom: 120 },
-  logoContainer: { 
-      marginTop: 40, // Added more space from the top nav
-      marginBottom: 10, 
-      alignItems: 'center' 
-    },  
-    logoTextGlitch: { color: '#fff', fontSize: 70, fontFamily: 'RubikGlitch', lineHeight: 75 },
   
-  // BAC Styles - bar logic removed, BAC text modified
+  // MASSIVE SPACER: Set to 320 to push everything down significantly
+  topSpacer: {
+    height: 320, 
+  },
+
   bacContainer: { 
     alignItems: 'center', 
-    marginTop: 100, // Increased from 40 to 100 to push it much lower
-    marginBottom: 40 
+    marginBottom: 40 // Tighter spacing to keep action items visible
   },
   
   bacValueSpray: { 
     color: '#fff', 
-    fontSize: 42, // Slightly smaller for a cleaner look
-    fontFamily: 'RubikSprayPaint' 
+    fontSize: 72, // Mega size for the hero element
+    fontFamily: 'RubikSprayPaint',
+    // Added a subtle glow since it's now the centerpiece
+    textShadowColor: 'rgba(212, 98, 42, 0.8)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 15,
   },
   
   bacLabelSpray: { 
     color: '#fff', 
-    fontSize: 16, 
+    fontSize: 20, 
     fontFamily: 'RubikSprayPaint', 
-    marginTop: -5,
-    opacity: 0.8 // Softened the label slightly
+    marginTop: -10,
+    opacity: 0.6,
+    letterSpacing: 2
   },
 
   actionButtonsWrapper: {
-    marginTop: 20, // Reduced this slightly since the BAC pushed everything down
+    marginTop: 0, 
   },
   
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  statCard: { backgroundColor: 'rgba(17,17,17,0.8)', width: '48%', padding: 18, borderRadius: 20, height: 110, justifyContent: 'center' },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
+  statCard: { backgroundColor: 'rgba(17,17,17,0.85)', width: '48%', padding: 18, borderRadius: 20, height: 110, justifyContent: 'center' },
   statTitleSpray: { color: '#fff', fontSize: 18, fontFamily: 'RubikSprayPaint', marginBottom: 5 },
   statValueRubik: { color: '#666', fontSize: 14, fontFamily: 'Rubik' },
-  chartCard: { backgroundColor: 'rgba(17,17,17,0.8)', borderRadius: 25, padding: 20, marginBottom: 15 },
+  chartCard: { backgroundColor: 'rgba(17,17,17,0.85)', borderRadius: 25, padding: 20, marginBottom: 15 },
   chartTitleSpray: { color: '#fff', fontSize: 18, fontFamily: 'RubikSprayPaint', marginBottom: 20 },
   chartContainer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 80, paddingHorizontal: 5 },
   chartColumn: { alignItems: 'center', flex: 1 },
-  bar: { width: 12, backgroundColor: '#f58a4e', borderRadius: 4 },
+  bar: { width: 12, backgroundColor: '#D4622A', borderRadius: 4 }, // Updated to SipSafe Orange
   receiptButton: {
-    backgroundColor: 'rgba(17,17,17,0.8)',
+    backgroundColor: 'rgba(17,17,17,0.85)',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
     borderRadius: 20,
-    marginBottom: 20,
+    marginBottom: 15,
     borderWidth: 1,
     borderColor: '#333'
   },
-  receiptButtonText: { color: '#f58a4e', fontSize: 18, fontFamily: 'RubikSprayPaint' },
-  receiptButtonArrow: { color: '#f58a4e', fontSize: 22, fontWeight: 'bold' },
+  receiptButtonText: { color: '#D4622A', fontSize: 18, fontFamily: 'RubikSprayPaint' },
+  receiptButtonArrow: { color: '#D4622A', fontSize: 22, fontWeight: 'bold' },
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  featureCard: { backgroundColor: 'rgba(17,17,17,0.8)', width: '48%', padding: 15, borderRadius: 20, marginBottom: 15 },
+  featureCard: { backgroundColor: 'rgba(17,17,17,0.85)', width: '48%', padding: 15, borderRadius: 20, marginBottom: 15 },
   featureTitle: { color: '#fff', fontFamily: 'RubikBold', fontSize: 14, marginTop: 10 },
   featureDesc: { color: '#555', fontSize: 11, marginTop: 4, fontFamily: 'InstrumentSans' },
 });
