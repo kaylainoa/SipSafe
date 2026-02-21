@@ -1,6 +1,6 @@
 type SupportedMimeType = "image/jpeg" | "image/png" | "image/webp";
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
-const DEFAULT_GEMINI_MODEL = "gemini-pro";
+const DEFAULT_GEMINI_MODEL = "gemini-1.5-flash"; // Use vision-capable model for image analysis
 let cachedModel: string | null = null;
 
 export interface DrinkVerificationResult {
@@ -83,8 +83,11 @@ async function resolveGeminiModel(apiKey: string): Promise<string> {
     .map((m: { name?: string }) => (m.name ?? "").replace(/^models\//, ""))
     .filter(Boolean);
 
+  // Prioritize vision-capable models (flash, pro-vision) for image analysis
   const fromList =
-    modelNames.find((name) => name.includes("pro")) ?? modelNames[0];
+    modelNames.find((name) => name.includes("flash") || name.includes("vision")) ?? 
+    modelNames.find((name) => name.includes("pro")) ?? 
+    modelNames[0];
 
   if (!fromList) {
     throw new Error(
@@ -124,7 +127,7 @@ async function generateWithModel(
         ],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 500,
+          maxOutputTokens: 2048, // Increased to prevent truncation
         },
       }),
     },
@@ -209,18 +212,70 @@ export async function verifyDrinkWithGemini(
   const data = await response.json();
   // Debug: Log the full Gemini API response
   console.log("Gemini API response:", JSON.stringify(data, null, 2));
+  
+  // Check for blocked content or safety filters
+  if (data?.promptFeedback?.blockReason) {
+    throw new Error(`Gemini blocked the request: ${data.promptFeedback.blockReason}. The image may have been flagged by safety filters.`);
+  }
+  
+  // Check if candidates exist
+  if (!data?.candidates || data.candidates.length === 0) {
+    throw new Error(`Gemini returned no candidates. Response: ${JSON.stringify(data).substring(0, 200)}`);
+  }
+  
+  // Check for finish reason
+  const finishReason = data.candidates[0]?.finishReason;
   const rawText: string =
     data?.candidates?.[0]?.content?.parts?.find(
       (part: { text?: string }) => typeof part?.text === "string",
     )?.text ?? "";
 
   if (!rawText) {
-    throw new Error("Gemini response was empty.");
+    const errorDetails = {
+      hasCandidates: !!data?.candidates,
+      candidateCount: data?.candidates?.length ?? 0,
+      hasContent: !!data?.candidates?.[0]?.content,
+      hasParts: !!data?.candidates?.[0]?.content?.parts,
+      partsCount: data?.candidates?.[0]?.content?.parts?.length ?? 0,
+      finishReason: data?.candidates?.[0]?.finishReason,
+      blockReason: data?.promptFeedback?.blockReason,
+    };
+    throw new Error(`Gemini response was empty. Details: ${JSON.stringify(errorDetails)}`);
   }
 
-  const parsed = JSON.parse(
-    sanitizeModelJson(rawText),
-  ) as Partial<GeminiRawResponse>;
+  // Warn if response was truncated but try to parse what we got
+  if (finishReason === "MAX_TOKENS") {
+    console.warn("Warning: Gemini response was truncated (MAX_TOKENS). Attempting to parse partial response.");
+  } else if (finishReason && finishReason !== "STOP") {
+    console.warn(`Warning: Gemini finish reason: ${finishReason}. Attempting to parse response anyway.`);
+  }
+
+  // Try to parse JSON, handling truncated responses
+  let parsed: Partial<GeminiRawResponse>;
+  try {
+    const sanitized = sanitizeModelJson(rawText);
+    parsed = JSON.parse(sanitized) as Partial<GeminiRawResponse>;
+  } catch (parseError) {
+    // If JSON parsing fails (e.g., due to truncation), try to extract what we can
+    if (finishReason === "MAX_TOKENS") {
+      console.warn("JSON parsing failed, attempting to extract partial data from truncated response");
+      // Try to extract at least the match field if it exists
+      const matchMatch = rawText.match(/"match"\s*:\s*(true|false)/i);
+      const match = matchMatch ? matchMatch[1].toLowerCase() === "true" : false;
+      
+      parsed = {
+        match,
+        matchedDrinkType: rawText.match(/"matchedDrinkType"\s*:\s*"([^"]+)"/i)?.[1] || "UNKNOWN",
+        spoofingLikely: rawText.match(/"spoofingLikely"\s*:\s*(true|false)/i)?.[1]?.toLowerCase() === "true" || false,
+        druggingLikely: rawText.match(/"druggingLikely"\s*:\s*(true|false)/i)?.[1]?.toLowerCase() === "true" || false,
+        summary: rawText.match(/"summary"\s*:\s*"([^"]+)"/i)?.[1] || "Response was truncated, unable to fully verify.",
+        concerns: [],
+        voiceMessage: "Verification incomplete due to response truncation.",
+      };
+    } else {
+      throw new Error(`Failed to parse Gemini JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw text: ${rawText.substring(0, 200)}`);
+    }
+  }
 
   const match = Boolean(parsed.match);
   const spoofingLikely = Boolean(parsed.spoofingLikely);
