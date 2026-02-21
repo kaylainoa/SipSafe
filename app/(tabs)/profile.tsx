@@ -1,17 +1,18 @@
+import { useRouter } from "expo-router"; // 1. Import router
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-  SafeAreaView,
-  StatusBar,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -193,7 +194,7 @@ const EditModal = ({
               <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
                 <Text style={styles.saveBtnText}>Save Changes</Text>
               </TouchableOpacity>
-              <View style={{ height: 32 }} />
+              <div style={{ height: 32 }} />
             </ScrollView>
           </View>
         </View>
@@ -205,6 +206,8 @@ const EditModal = ({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
+  const router = useRouter(); // 2. Initialize router
+  
   const [profile, setProfile] = useState<ProfileData>({
     name: "User",
     email: "user@email.com",
@@ -221,6 +224,12 @@ export default function ProfileScreen() {
 
   const [modalVisible, setModalVisible] = useState(false);
 
+  // 3. Logout logic
+  const handleLogout = () => {
+    // This sends the user back to the login page outside the tabs
+    router.replace("/login");
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#111" />
@@ -230,20 +239,16 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header label */}
         <Text style={styles.screenLabel}>Profile</Text>
 
-        {/* Avatar */}
         <View style={styles.avatarWrapper}>
           <View style={styles.avatar}>
             <Text style={styles.avatarInitials}>{getInitials(profile.name)}</Text>
           </View>
         </View>
 
-        {/* Welcome */}
         <Text style={styles.welcome}>Welcome, {profile.name.split(" ")[0]}!</Text>
 
-        {/* Info Card */}
         <View style={styles.card}>
           <InfoRow label="Name:" value={profile.name} />
           <Divider />
@@ -260,7 +265,6 @@ export default function ProfileScreen() {
           <InfoRow label="Address:" value={profile.address} />
           <Divider />
 
-          {/* Emergency contacts */}
           <View style={styles.emergencyBlock}>
             <Text style={[styles.infoLabel, styles.infoLabelAccent]}>
               Emergency{"\n"}Contacts:
@@ -280,6 +284,15 @@ export default function ProfileScreen() {
             activeOpacity={0.85}
           >
             <Text style={styles.editBtnText}>Edit Info</Text>
+          </TouchableOpacity>
+
+          {/* 4. Logout Button */}
+          <TouchableOpacity 
+            style={styles.logoutBtn} 
+            onPress={handleLogout}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.logoutText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -399,7 +412,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 16,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   editBtnText: {
     color: TEXT,
@@ -407,8 +420,19 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
     letterSpacing: 0.5,
   },
-
-  // ── Modal ──
+  // Added Logout Styles
+  logoutBtn: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 10,
+  },
+  logoutText: {
+    color: MUTED,
+    fontSize: 14,
+    textDecorationLine: 'underline',
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+  },
+  // ── Modal Styles (No changes below) ──
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.7)",
