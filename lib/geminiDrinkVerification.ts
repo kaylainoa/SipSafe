@@ -1,5 +1,6 @@
 type SupportedMimeType = "image/jpeg" | "image/png" | "image/webp";
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
+const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
 let cachedModel: string | null = null;
 
 export interface DrinkVerificationResult {
@@ -53,35 +54,6 @@ function toConciseVoiceMessage(input: string, fallback: string): string {
 
 async function resolveGeminiModel(apiKey: string): Promise<string> {
   if (cachedModel) return cachedModel;
-
-  const explicit = process.env.EXPO_PUBLIC_GEMINI_MODEL?.trim();
-  const candidateNames = [
-    explicit,
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash-latest",
-    "gemini-1.5-flash",
-  ].filter((name): name is string => Boolean(name));
-
-  // Try likely models first to avoid a listModels call on healthy configs.
-  for (const modelName of candidateNames) {
-    const probe = await fetch(
-      `${GEMINI_API_BASE}/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: "ping" }] }],
-          generationConfig: { maxOutputTokens: 1, temperature: 0 },
-        }),
-      }
-    );
-    if (probe.ok) {
-      cachedModel = modelName;
-      return modelName;
-    }
-  }
-
   const listResp = await fetch(`${GEMINI_API_BASE}/models?key=${encodeURIComponent(apiKey)}`);
   if (!listResp.ok) {
     const err = await listResp.text();
@@ -89,19 +61,60 @@ async function resolveGeminiModel(apiKey: string): Promise<string> {
   }
 
   const listData = await listResp.json();
-  const fromList: string | undefined = listData?.models
-    ?.find((m: { name?: string; supportedGenerationMethods?: string[] }) =>
+  const modelNames: string[] = (listData?.models ?? [])
+    .filter((m: { name?: string; supportedGenerationMethods?: string[] }) =>
       Array.isArray(m?.supportedGenerationMethods) &&
       m.supportedGenerationMethods.includes("generateContent")
     )
-    ?.name;
+    .map((m: { name?: string }) => (m.name ?? "").replace(/^models\//, ""))
+    .filter(Boolean);
+
+  const fromList =
+    modelNames.find((name) => name.includes("2.0-flash")) ??
+    modelNames.find((name) => name.includes("flash")) ??
+    modelNames[0];
 
   if (!fromList) {
     throw new Error("No Gemini model with generateContent support was found for this API key.");
   }
 
-  cachedModel = fromList.replace(/^models\//, "");
+  cachedModel = fromList;
   return cachedModel;
+}
+
+async function generateWithModel(
+  apiKey: string,
+  model: string,
+  prompt: string,
+  base64Image: string,
+  mimeType: SupportedMimeType
+): Promise<Response> {
+  return fetch(
+    `${GEMINI_API_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType,
+                  data: base64Image,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 220,
+        },
+      }),
+    }
+  );
 }
 
 export async function verifyDrinkWithGemini(
@@ -149,33 +162,16 @@ export async function verifyDrinkWithGemini(
     "7) If spoofingLikely is true, voiceMessage must say the spoofing sign(s) briefly.",
   ].join("\n");
 
-  const model = await resolveGeminiModel(apiKey);
+  const configuredModel = process.env.EXPO_PUBLIC_GEMINI_MODEL?.trim();
+  const primaryModel = cachedModel || configuredModel || DEFAULT_GEMINI_MODEL;
+  let response = await generateWithModel(apiKey, primaryModel, prompt, base64Image, mimeType);
 
-  const response = await fetch(
-    `${GEMINI_API_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType,
-                  data: base64Image,
-                },
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.1,
-        },
-      }),
+  if (!response.ok && (response.status === 404 || response.status === 400)) {
+    const discoveredModel = await resolveGeminiModel(apiKey);
+    if (discoveredModel !== primaryModel) {
+      response = await generateWithModel(apiKey, discoveredModel, prompt, base64Image, mimeType);
     }
-  );
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
