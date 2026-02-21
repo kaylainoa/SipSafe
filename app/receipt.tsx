@@ -21,7 +21,7 @@ export default function NightReceipt() {
       <View style={styles.receiptContainer}>
         <View style={styles.receiptPaper}>
           <View style={styles.innerContent}>
-            <Text style={styles.brandName}>SIPSAFE™</Text>
+            <Text style={styles.brandName}>SIPSAFE</Text>
             <Text style={styles.merchantInfo}>STATION #402 — NYC, NY</Text>
             <Text style={styles.merchantInfo}>FEB 21, 2026 01:24 PM</Text>
             
