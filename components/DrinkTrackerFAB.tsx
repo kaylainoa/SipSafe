@@ -49,6 +49,7 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
@@ -571,8 +572,14 @@ export default function DrinkTrackerFAB({
   const [waterNudge, setWaterNudge] = useState(false);
   const [sessionStart] = useState(new Date());
   const [tick, setTick] = useState(0);
+  const [drinkSearchQuery, setDrinkSearchQuery] = useState("");
 
   const drinkOptions: DrinkOption[] = [...DRINK_TYPES, ...drinkOptionsFromApi];
+  const filteredDrinkOptions = drinkSearchQuery.trim()
+    ? drinkOptions.filter((d) =>
+        d.label.toLowerCase().includes(drinkSearchQuery.trim().toLowerCase()),
+      )
+    : drinkOptions;
 
   const pulse = useRef(new Animated.Value(1)).current;
   const slideY = useRef(new Animated.Value(800)).current;
@@ -990,20 +997,41 @@ export default function DrinkTrackerFAB({
 
             <Divider label="LOG A DRINK" />
 
+            <View style={shS.searchWrap}>
+              <TextInput
+                style={shS.searchInput}
+                placeholder="Search drinks..."
+                placeholderTextColor={C.muted}
+                value={drinkSearchQuery}
+                onChangeText={setDrinkSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+              />
+            </View>
+
             <View style={shS.grid}>
-              {drinkOptions.map((dt) => (
-                <TouchableOpacity
-                  key={dt.id ?? dt.label}
-                  style={shS.drinkBtn}
-                  onPress={() => verifyAndAddDrink(dt)}
-                  activeOpacity={verifying ? 1 : 0.65}
-                  disabled={verifying}
-                >
-                  <Text style={shS.drinkEmoji}>{dt.emoji}</Text>
-                  <Text style={shS.drinkName} numberOfLines={2}>{dt.label}</Text>
-                  <Text style={shS.drinkAbv}>{dt.abv}% ABV</Text>
-                </TouchableOpacity>
-              ))}
+              {filteredDrinkOptions.length === 0 ? (
+                <View style={shS.searchEmpty}>
+                  <Text style={shS.searchEmptyText}>
+                    {drinkSearchQuery.trim() ? "No drinks match your search." : "No drinks loaded."}
+                  </Text>
+                </View>
+              ) : (
+                filteredDrinkOptions.map((dt) => (
+                  <TouchableOpacity
+                    key={dt.id ?? dt.label}
+                    style={shS.drinkBtn}
+                    onPress={() => verifyAndAddDrink(dt)}
+                    activeOpacity={verifying ? 1 : 0.65}
+                    disabled={verifying}
+                  >
+                    <Text style={shS.drinkEmoji}>{dt.emoji}</Text>
+                    <Text style={shS.drinkName} numberOfLines={2}>{dt.label}</Text>
+                    <Text style={shS.drinkAbv}>{dt.abv}% ABV</Text>
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
 
             {drinks.length > 0 && (
@@ -1235,6 +1263,21 @@ const shS = StyleSheet.create({
   content: { padding: 14 },
 
   statsRow: { flexDirection: "row", marginBottom: 4 },
+
+  searchWrap: { marginBottom: 12 },
+  searchInput: {
+    backgroundColor: C.surfaceAlt,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: C.text,
+    fontSize: 14,
+    fontFamily: MONO,
+  },
+  searchEmpty: { paddingVertical: 20, width: "100%" },
+  searchEmptyText: { color: C.muted, fontSize: 12, fontFamily: MONO, textAlign: "center" },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
   drinkBtn: {
