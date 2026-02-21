@@ -42,6 +42,15 @@ function toSafeStringArray(input: unknown): string[] {
   return input.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean);
 }
 
+function toConciseVoiceMessage(input: string, fallback: string): string {
+  const base = toSafeString(input) || toSafeString(fallback) || "Unable to verify drink.";
+  const sentences = base.split(/[.!?]/).map((part) => part.trim()).filter(Boolean);
+  const combined = sentences.slice(0, 2).join(". ").trim() || base;
+  const words = combined.split(/\s+/).filter(Boolean).slice(0, 20);
+  const concise = words.join(" ").trim();
+  return concise ? `${concise}.` : "Unable to verify drink.";
+}
+
 async function resolveGeminiModel(apiKey: string): Promise<string> {
   if (cachedModel) return cachedModel;
 
@@ -131,10 +140,13 @@ export async function verifyDrinkWithGemini(
     "}",
     "Rules:",
     "1) match must be true only when the observed drink appears to be the same type as the expected type (e.g., SHOT must not match WINE).",
+    "1a) For expected COCKTAIL, a mixed drink in a red solo cup can still be a valid match.",
     "2) Evaluate visible indicators of spoofing/tampering (screen replay, printed image, fake container cues, obvious staging inconsistencies).",
-    "3) Evaluate visible indicators that a drink may be drugged/spiked/tampered (powders, residue, unexpected cloudiness/layering, suspicious artifacts).",
+    "3) Evaluate visible indicators that a drink may be roofied/drugged/spiked/tampered (powders, residue, dissolved tablets, unusual cloudiness/layering, suspicious artifacts).",
     "4) If uncertain, set match=false and include why in concerns.",
-    "5) Keep summary concise (<= 2 sentences) and voiceMessage natural for spoken safety guidance.",
+    "5) Keep summary concise (<= 2 sentences).",
+    "6) voiceMessage must be direct and short (max 20 words).",
+    "7) If spoofingLikely is true, voiceMessage must say the spoofing sign(s) briefly.",
   ].join("\n");
 
   const model = await resolveGeminiModel(apiKey);
@@ -185,13 +197,27 @@ export async function verifyDrinkWithGemini(
   const druggingLikely = Boolean(parsed.druggingLikely);
   const concerns = toSafeStringArray(parsed.concerns);
   const summary = toSafeString(parsed.summary, "Unable to verify this drink from the photo.");
-  const voiceMessage = toSafeString(parsed.voiceMessage, summary);
   const matchedDrinkType = toSafeString(parsed.matchedDrinkType, "UNKNOWN").toUpperCase();
 
+  // Allow common mixed-drink presentation in red solo cups when COCKTAIL is expected.
+  const isCocktailSoloCupMatch =
+    expectedDrinkType.toUpperCase() === "COCKTAIL" &&
+    matchedDrinkType.includes("SOLO CUP");
+
+  const isExpectedDrinkMatch = Boolean(parsed.match) || isCocktailSoloCupMatch;
+  const voiceFallback = !isExpectedDrinkMatch
+    ? `Mismatch. Expected ${expectedDrinkType}, not ${matchedDrinkType}.`
+    : spoofingLikely
+      ? `Warning. Spoofing signs detected: ${concerns.slice(0, 2).join(", ") || "staged or fake-image indicators"}.`
+      : druggingLikely
+        ? "Warning. Possible roofie or spiking signs detected."
+        : "Drink verified.";
+  const voiceMessage = toConciseVoiceMessage(toSafeString(parsed.voiceMessage), voiceFallback);
+
   return {
-    allowed: match && !spoofingLikely && !druggingLikely,
+    allowed: isExpectedDrinkMatch && !spoofingLikely && !druggingLikely,
     matchedDrinkType,
-    isExpectedDrinkMatch: match,
+    isExpectedDrinkMatch,
     spoofingLikely,
     druggingLikely,
     summary,
