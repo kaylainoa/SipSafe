@@ -37,6 +37,11 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, Platform, Alert, Animated, Dimensions, PanResponder,
 } from "react-native";
+<<<<<<< Updated upstream
+=======
+import * as ImagePicker from "expo-image-picker";
+
+>>>>>>> Stashed changes
 
 const { width: SW } = Dimensions.get("window");
 
@@ -330,6 +335,55 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     }).start();
   }, [open]);
 
+<<<<<<< Updated upstream
+=======
+  const removeDrink = useCallback((id: string) => {
+    setDrinks((prev) => prev.filter((d) => d.id !== id));
+  }, []);
+
+  const promptVerifyDrink = useCallback(async (drinkIdToRevoke?: string) => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Camera access needed", "Allow camera access to verify your drink for tampering.", [{ text: "OK" }]);
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      quality: 0.8,
+      base64: true,
+    });
+    if (result.canceled || !result.assets[0]?.base64) return;
+
+    setVerifying(true);
+    try {
+      const analysis = await analyzeDrinkForSpoofing(
+        const response = await fetch(
+          "http://localhost:3000/api/identifyDrink",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              base64Image: result.assets[0].base64,
+              mimeType: (result.assets[0].mimeType as "image/jpeg" | "image/png") ?? "image/jpeg",
+            }),
+          }
+        );
+        const analysis = await response.json();
+      if (!analysis.safe && drinkIdToRevoke) {
+        removeDrink(drinkIdToRevoke);
+      }
+      const title = analysis.safe ? "✓ Drink looks OK" : "⚠ Possible concerns";
+      const body = analysis.safe
+        ? analysis.summary + (analysis.concerns.length > 0 ? `\n\n${analysis.concerns.join("\n")}` : "")
+        : (drinkIdToRevoke ? "Drink removed from log.\n\n" : "") + analysis.summary + (analysis.concerns.length > 0 ? `\n\n${analysis.concerns.join("\n")}` : "");
+      Alert.alert(title, body, [{ text: "OK" }]);
+    } finally {
+      setVerifying(false);
+    }
+  }, [removeDrink]);
+
+>>>>>>> Stashed changes
   const addDrink = useCallback((dt: typeof DRINK_TYPES[number]) => {
     const entry: DrinkEntry = {
       id: Date.now().toString(),

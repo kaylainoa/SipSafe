@@ -6,6 +6,7 @@ require("dotenv").config();
 const authRoutes = require("./routes/drinklogs");
 const drinkRoutes = require("./routes/drinks");
 const drinkLogRoutes = require("./routes/drinklogs");
+const identifyDrinkRoutes = require("./routes/identifyDrink");
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(express.json({ limit: "10mb" })); // 10mb to handle base64 images from c
 app.use("/api/auth", authRoutes);
 app.use("/api/drinks", drinkRoutes);
 app.use("/api/drinklogs", drinkLogRoutes);
+app.use("/api/identifyDrink", identifyDrinkRoutes);
 
 // Health check
 app.get("/", (req, res) => {
