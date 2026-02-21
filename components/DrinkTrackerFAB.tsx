@@ -36,7 +36,10 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, Platform, Alert, Animated, Dimensions, PanResponder,
+  ActivityIndicator,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
 
 const { width: SW } = Dimensions.get("window");
 
@@ -272,6 +275,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   const [waterNudge, setWaterNudge] = useState(false);
   const [sessionStart]              = useState(new Date());
   const [tick, setTick]             = useState(0);
+  const [verifying, setVerifying]   = useState(false);
 
   const pulse  = useRef(new Animated.Value(1)).current;
   const slideY = useRef(new Animated.Value(800)).current;
@@ -330,6 +334,43 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     }).start();
   }, [open]);
 
+  const removeDrink = useCallback((id: string) => {
+    setDrinks((prev) => prev.filter((d) => d.id !== id));
+  }, []);
+
+  const promptVerifyDrink = useCallback(async (drinkIdToRevoke?: string) => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Camera access needed", "Allow camera access to verify your drink for tampering.", [{ text: "OK" }]);
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      quality: 0.8,
+      base64: true,
+    });
+    if (result.canceled || !result.assets[0]?.base64) return;
+
+    setVerifying(true);
+    try {
+      const analysis = await analyzeDrinkForSpoofing(
+        result.assets[0].base64,
+        (result.assets[0].mimeType as "image/jpeg" | "image/png") ?? "image/jpeg"
+      );
+      if (!analysis.safe && drinkIdToRevoke) {
+        removeDrink(drinkIdToRevoke);
+      }
+      const title = analysis.safe ? "✓ Drink looks OK" : "⚠ Possible concerns";
+      const body = analysis.safe
+        ? analysis.summary + (analysis.concerns.length > 0 ? `\n\n${analysis.concerns.join("\n")}` : "")
+        : (drinkIdToRevoke ? "Drink removed from log.\n\n" : "") + analysis.summary + (analysis.concerns.length > 0 ? `\n\n${analysis.concerns.join("\n")}` : "");
+      Alert.alert(title, body, [{ text: "OK" }]);
+    } finally {
+      setVerifying(false);
+    }
+  }, [removeDrink]);
+
   const addDrink = useCallback((dt: typeof DRINK_TYPES[number]) => {
     const entry: DrinkEntry = {
       id: Date.now().toString(),
@@ -342,11 +383,15 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
       if (next.length % 3 === 0) setWaterNudge(true);
       return next;
     });
-  }, []);
-
-  const removeDrink = useCallback((id: string) => {
-    setDrinks((prev) => prev.filter((d) => d.id !== id));
-  }, []);
+    Alert.alert(
+      "Verify your drink?",
+      "Take a photo to check for signs of tampering or spoofing. If concerns are found, the drink will not be logged.",
+      [
+        { text: "Skip", style: "cancel" },
+        { text: "Take photo", onPress: () => promptVerifyDrink(entry.id) },
+      ]
+    );
+  }, [promptVerifyDrink]);
 
   const endSession = () =>
     Alert.alert("END SESSION", "Clear all drinks and reset BAC?", [
@@ -394,6 +439,13 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
 
       {/* ══ BOTTOM SHEET MODAL ══════════════════════════════════════════════ */}
       <Modal visible={open} transparent animationType="none" onRequestClose={() => setOpen(false)}>
+
+        {verifying && (
+          <View style={shS.verifyingOverlay}>
+            <ActivityIndicator size="large" color={C.orange} />
+            <Text style={shS.verifyingTxt}>Analyzing drink...</Text>
+          </View>
+        )}
 
         {/* Dim backdrop — tap outside to close */}
         <TouchableOpacity style={shS.overlay} activeOpacity={1} onPress={() => setOpen(false)} />
@@ -462,6 +514,17 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
                 </TouchableOpacity>
               ))}
             </View>
+
+            {drinks.length > 0 && (
+              <TouchableOpacity
+                style={[shS.verifyBtn, verifying && shS.verifyBtnDisabled]}
+                onPress={() => promptVerifyDrink()}
+                disabled={verifying}
+                activeOpacity={0.8}
+              >
+                <Text style={shS.verifyBtnTxt}>📷  TAKE PHOTO — VERIFY DRINK</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity style={shS.alertBtn} onPress={sendAlert} activeOpacity={0.8}>
               <Text style={shS.alertBtnTxt}>📍  ALERT MY FRIENDS</Text>
@@ -541,6 +604,22 @@ const shS = StyleSheet.create({
     top:0, left:0, right:0, bottom:0,
     backgroundColor: "rgba(0,0,0,0.72)",
   },
+  verifyingOverlay: {
+    position: "absolute",
+    top:0, left:0, right:0, bottom:0,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    zIndex: 1000,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  verifyingTxt: {
+    color: C.orange,
+    fontSize: 11,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 2,
+  },
   sheet: {
     position: "absolute",
     bottom:0, left:0, right:0,
@@ -587,6 +666,11 @@ const shS = StyleSheet.create({
   alertBtn:    { backgroundColor:"#161210", borderWidth:1.5, borderColor:"#D4622A", borderRadius:2,
                  paddingVertical:15, alignItems:"center", marginBottom:4 },
   alertBtnTxt: { color:"#D4622A", fontSize:12, fontFamily:MONO, fontWeight:"900", letterSpacing:2.5 },
+
+  verifyBtn:        { backgroundColor:"#161210", borderWidth:1.5, borderColor:"#D4622A", borderRadius:2,
+                      paddingVertical:14, alignItems:"center", marginBottom:8 },
+  verifyBtnTxt:     { color:"#D4622A", fontSize:11, fontFamily:MONO, fontWeight:"900", letterSpacing:2 },
+  verifyBtnDisabled:{ opacity:0.5 },
 
   empty:      { alignItems:"center", paddingVertical:28 },
   emptyDash:  { color:"#2C2520", fontSize:32, marginBottom:10 },
