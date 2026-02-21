@@ -32,8 +32,8 @@
  * ────────────────────────────────────────────────────────────────────────────
  */
 
+import { api } from "@/constants/api";
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
-// ...existing code...
 import { speakText } from "@/lib/elevenlabsTTS";
 import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
 import * as ImagePicker from "expo-image-picker";
@@ -72,8 +72,16 @@ const C = {
 };
 const MONO = Platform.OS === "ios" ? "Courier New" : "monospace";
 
-// ─── Drink types ──────────────────────────────────────────────────────────────
-const DRINK_TYPES = [
+// ─── Drink types (static + from API) ──────────────────────────────────────────
+export type DrinkOption = {
+  id?: string;
+  label: string;
+  emoji: string;
+  standardDrinks: number;
+  abv: number;
+};
+
+const DRINK_TYPES: DrinkOption[] = [
   { label: "BEER", emoji: "🍺", standardDrinks: 1.0, abv: 5 },
   { label: "WINE", emoji: "🍷", standardDrinks: 1.0, abv: 12 },
   { label: "SHOT", emoji: "🥃", standardDrinks: 1.0, abv: 40 },
@@ -81,6 +89,15 @@ const DRINK_TYPES = [
   { label: "SELTZER", emoji: "🫧", standardDrinks: 0.8, abv: 5 },
   { label: "CIDER", emoji: "🍎", standardDrinks: 1.0, abv: 5 },
 ];
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  beer: "🍺",
+  wine: "🍷",
+  spirits: "🥃",
+  cocktail: "🍹",
+  cider: "🍎",
+  "non-alcoholic": "🫧",
+};
 
 // ─── Types & BAC logic ────────────────────────────────────────────────────────
 interface DrinkEntry {
@@ -548,11 +565,18 @@ export default function DrinkTrackerFAB({
 }) {
   const [open, setOpen] = useState(false);
   const [drinks, setDrinks] = useState<DrinkEntry[]>([]);
+  const [drinkOptionsFromApi, setDrinkOptionsFromApi] = useState<DrinkOption[]>([]);
   const [bac, setBac] = useState(0);
   const [verifying, setVerifying] = useState(false);
   const [waterNudge, setWaterNudge] = useState(false);
   const [sessionStart] = useState(new Date());
   const [tick, setTick] = useState(0);
+
+  // All drink options: static types + drinks from database
+  const drinkOptions: DrinkOption[] = [
+    ...DRINK_TYPES,
+    ...drinkOptionsFromApi,
+  ];
 
   const pulse = useRef(new Animated.Value(1)).current;
   const slideY = useRef(new Animated.Value(800)).current;
@@ -630,6 +654,31 @@ export default function DrinkTrackerFAB({
     }).start();
   }, [open]);
 
+  // Fetch drinks from database for "log a drink" section
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.getDrinks();
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data : (data as { drinks?: unknown[] })?.drinks;
+        if (!Array.isArray(list)) return;
+        const options: DrinkOption[] = list.map((d: { _id?: string; name?: string; category?: string; abv?: number; standardDrinks?: number }) => ({
+          id: d._id,
+          label: d.name ?? "Drink",
+          emoji: CATEGORY_EMOJI[String(d.category ?? "").toLowerCase()] ?? "🍹",
+          standardDrinks: typeof d.standardDrinks === "number" ? d.standardDrinks : 1,
+          abv: typeof d.abv === "number" ? d.abv : 5,
+        }));
+        if (!cancelled) setDrinkOptionsFromApi(options);
+      } catch {
+        // Offline or API error: keep only static drinks
+        if (!cancelled) setDrinkOptionsFromApi([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const removeDrink = useCallback((id: string) => {
     setDrinks((prev) => prev.filter((d) => d.id !== id));
   }, []);
@@ -684,7 +733,7 @@ export default function DrinkTrackerFAB({
     [removeDrink],
   );
 
-  const addDrink = useCallback((dt: (typeof DRINK_TYPES)[number]) => {
+  const addDrink = useCallback((dt: DrinkOption) => {
     const entry: DrinkEntry = {
       id: Date.now().toString(),
       type: dt.label,
@@ -700,7 +749,7 @@ export default function DrinkTrackerFAB({
   }, []);
 
   const verifyAndAddDrink = useCallback(
-    async (dt: (typeof DRINK_TYPES)[number]) => {
+    async (dt: DrinkOption) => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
@@ -947,16 +996,16 @@ export default function DrinkTrackerFAB({
             <Divider label="LOG A DRINK" />
 
             <View style={shS.grid}>
-              {DRINK_TYPES.map((dt) => (
+              {drinkOptions.map((dt) => (
                 <TouchableOpacity
-                  key={dt.label}
+                  key={dt.id ?? dt.label}
                   style={shS.drinkBtn}
                   onPress={() => verifyAndAddDrink(dt)}
                   activeOpacity={verifying ? 1 : 0.65}
                   disabled={verifying}
                 >
                   <Text style={shS.drinkEmoji}>{dt.emoji}</Text>
-                  <Text style={shS.drinkName}>{dt.label}</Text>
+                  <Text style={shS.drinkName} numberOfLines={2}>{dt.label}</Text>
                   <Text style={shS.drinkAbv}>{dt.abv}% ABV</Text>
                 </TouchableOpacity>
               ))}
