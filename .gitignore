@@ -45,3 +45,5 @@ app-example
 /android
 .env.example
 .env
+.env
+.env.example
