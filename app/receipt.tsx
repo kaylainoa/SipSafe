@@ -7,19 +7,38 @@ const { width } = Dimensions.get('window');
 export default function NightReceipt() {
   const router = useRouter();
 
+  // Reusable component for the jagged edge
+  // Define what the props look like
+interface JaggedEdgeProps {
+  position: 'top' | 'bottom';
+}
+
+const JaggedEdge = ({ position }: JaggedEdgeProps) => (
+  <View style={[
+    styles.jaggedContainer, 
+    position === 'top' ? styles.topJagged : styles.bottomJagged
+  ]}>
+    {[...Array(40)].map((_, i) => (
+      <View key={i} style={styles.tooth} />
+    ))}
+  </View>
+);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      {/* Navigation Header - Fixed Error & Removed Back Logic */}
       <View style={styles.headerNav}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeBtnContainer}>
           <Text style={styles.closeX}>✕</Text>
         </TouchableOpacity>
         <Text style={styles.navTitle}>SUMMARY</Text>
-        <View style={{ width: 40 }} /> {/* Spacer to keep title centered */}
+        <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.receiptContainer}>
         <View style={styles.receiptPaper}>
+          {/* Top Jagged Edge */}
+          <JaggedEdge position="top" />
+
           <View style={styles.innerContent}>
             <Text style={styles.brandName}>SIPSAFE</Text>
             <Text style={styles.merchantInfo}>STATION #402 — NYC, NY</Text>
@@ -72,12 +91,8 @@ export default function NightReceipt() {
             <View style={{ marginBottom: 40 }} />
           </View>
 
-          {/* Jagged Bottom Fix */}
-          <View style={styles.jaggedBottomContainer}>
-            {[...Array(40)].map((_, i) => (
-              <View key={i} style={styles.tooth} />
-            ))}
-          </View>
+          {/* Bottom Jagged Edge */}
+          <JaggedEdge position="bottom" />
         </View>
       </View>
     </ScrollView>
@@ -94,32 +109,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 30
   },
-  closeBtnContainer: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeX: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: '300',
-    fontFamily: 'Inter', // Or any sans-serif available
-  },
+  closeBtnContainer: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  closeX: { color: '#fff', fontSize: 28, fontWeight: '300' },
   navTitle: { color: '#fff', fontFamily: 'RubikBold', fontSize: 16, letterSpacing: 2 },
   receiptContainer: { paddingHorizontal: 30, width: '100%' },
+  
   receiptPaper: {
-    backgroundColor: '#E8E8E8', 
+    backgroundColor: '#D2C9B1', // Dusty/Aged paper color
     width: '100%',
-    paddingTop: 40,
     shadowColor: '#fff',
-    shadowOffset: { width: 6, height: 6 },
+    shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 0,
     elevation: 10,
-    overflow: 'hidden',
+    overflow: 'hidden', // Clips the "teeth" so they only show outside the paper
   },
-  innerContent: { paddingHorizontal: 25, alignItems: 'center' },
+  
+  innerContent: { paddingHorizontal: 25, alignItems: 'center', paddingTop: 20 },
   brandName: { fontFamily: 'RubikGlitch', fontSize: 32, color: '#000', marginBottom: 5 },
   merchantInfo: { fontFamily: 'Courier', fontSize: 10, color: '#444', textTransform: 'uppercase' },
   dottedDivider: {
@@ -142,19 +148,26 @@ const styles = StyleSheet.create({
   barcodeArea: { marginTop: 30, alignItems: 'center', width: '100%' },
   barcodeMocks: { width: '100%', height: 40, backgroundColor: '#000', marginBottom: 5 },
   serialNumber: { fontFamily: 'Courier', fontSize: 10, letterSpacing: 3 },
-  jaggedBottomContainer: {
+
+  // Jagged logic
+  jaggedContainer: {
     flexDirection: 'row',
     width: '100%',
-    height: 10,
+    height: 12,
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    zIndex: 1,
+  },
+  topJagged: {
+    marginTop: -7, // Pulls the teeth up to "cut" into the top
+  },
+  bottomJagged: {
+    marginBottom: -7, // Pulls the teeth down to "cut" into the bottom
   },
   tooth: {
-    width: 14,
-    height: 14,
-    backgroundColor: '#000',
+    width: 12,
+    height: 12,
+    backgroundColor: '#000', // Matches app background to create the "cut" effect
     transform: [{ rotate: '45deg' }],
-    marginTop: 3,
-    marginHorizontal: -2,
+    marginHorizontal: -1,
   }
 });
