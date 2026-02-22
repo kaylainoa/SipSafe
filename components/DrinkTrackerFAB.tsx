@@ -553,6 +553,7 @@ export default function DrinkTrackerFAB({
   const [bac, setBac] = useState(0);
   const [verifying, setVerifying] = useState(false);
   const [waterNudge, setWaterNudge] = useState(false);
+  const [autoAlertSent, setAutoAlertSent] = useState(false);
   const [sessionStart] = useState(new Date());
   const [tick, setTick] = useState(0);
 
@@ -808,6 +809,7 @@ export default function DrinkTrackerFAB({
         onPress: () => {
           setDrinks([]);
           setWaterNudge(false);
+          setAutoAlertSent(false);
           setOpen(false);
         },
       },
@@ -867,6 +869,13 @@ export default function DrinkTrackerFAB({
   const status = getBACStatus(bac);
   const totalStd = drinks.reduce((s, d) => s + d.standardDrinks, 0);
   const isDanger = bac >= BAC_DANGER;
+
+  useEffect(() => {
+    if (!autoAlertSent && bac >= BAC_DANGER && drinks.length > 0) {
+      setAutoAlertSent(true);
+      void sendAlert();
+    }
+  }, [autoAlertSent, bac, drinks.length, sendAlert]);
 
   // FAB appearance reacts to session state
   const fabBg = drinks.length === 0 ? C.surface : isDanger ? C.red : C.redDark;
