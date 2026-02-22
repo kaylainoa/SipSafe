@@ -1,6 +1,8 @@
+import { useDrinkContext } from '@/contexts/DrinkContext';
+import { api } from '@/constants/api';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
@@ -18,10 +20,7 @@ import {
 import { BebasNeue_400Regular, useFonts } from '@expo-google-fonts/bebas-neue';
 import { SpecialElite_400Regular } from '@expo-google-fonts/special-elite';
 
-const THEME_COLOR = '#FF4000'; 
-const WIDMARK_R = { male: 0.73, female: 0.66 };
-const USER_WEIGHT_LBS = 130;
-const USER_SEX = "female";
+const THEME_COLOR = '#FF4000';
 
 const DRINK_TYPES = [
   { label: "BEER", emoji: "🍺", standardDrinks: 1.0 },
@@ -32,36 +31,15 @@ const DRINK_TYPES = [
   { label: "CIDER", emoji: "🍎", standardDrinks: 1.0 },
 ];
 
-interface DrinkEntry {
-  id: string;
-  type: string;
-  emoji: string;
-  standardDrinks: number;
-  timestamp: Date;
-}
-
-const DrinkContext = createContext({
-  bac: 0,
-  drinks: [] as DrinkEntry[],
-  addDrink: (_dt: (typeof DRINK_TYPES)[number]) => {},
-});
-
-function calcBAC(drinks: DrinkEntry[]): number {
-  if (!drinks.length) return 0;
-  const wKg = USER_WEIGHT_LBS * 0.453592;
-  let totalBac = 0;
-  for (const d of drinks) {
-    const hrs = (Date.now() - d.timestamp.getTime()) / 3600000;
-    const peak = (d.standardDrinks * 14) / (wKg * 1000 * WIDMARK_R[USER_SEX]) * 100;
-    totalBac += peak - Math.min(peak, hrs * 0.015);
-  }
-  return Math.max(0, totalBac);
-}
+const CATEGORY_MAP: Record<string, string> = {
+  BEER: 'beer', WINE: 'wine', SHOT: 'spirits', COCKTAIL: 'cocktail',
+  SELTZER: 'cider', CIDER: 'cider',
+};
 
 function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
   const router = useRouter();
-  const { bac } = useContext(DrinkContext);
-  const bacPercentage = Math.min((bac / 0.15) * 100, 100);
+  const { bac } = useDrinkContext();
+  const bacPercentage = Math.min(((bac ?? 0) / 0.15) * 100, 100);
 
   return (
     <ImageBackground
@@ -99,7 +77,7 @@ function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
           <View style={styles.progressBarBackground}>
             <View style={[styles.progressBarFill, { width: `${bacPercentage}%` }]} />
           </View>
-          <Text style={styles.bacValue}>{bac.toFixed(3)}%</Text>
+          <Text style={styles.bacValue}>{(bac ?? 0).toFixed(3)}%</Text>
           <Text style={styles.bacLabel}>EST. BAC</Text>
         </View>
 
@@ -142,71 +120,66 @@ function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
 }
 
 export default function App() {
+  const { addDrink: contextAddDrink } = useDrinkContext();
   const [fontsLoaded] = useFonts({
     BebasNeue: BebasNeue_400Regular,
     SpecialElite: SpecialElite_400Regular,
   });
 
   const [open, setOpen] = useState(false);
-  const [drinks, setDrinks] = useState<DrinkEntry[]>([]);
-  const [bac, setBac] = useState(0);
   const slideY = useRef(new Animated.Value(1000)).current;
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
+    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded]);
-
-  useEffect(() => {
-    setBac(calcBAC(drinks));
-    const timer = setInterval(() => setBac(calcBAC(drinks)), 30000);
-    return () => clearInterval(timer);
-  }, [drinks]);
 
   useEffect(() => {
     Animated.spring(slideY, { toValue: open ? 0 : 1000, useNativeDriver: true, damping: 25 }).start();
   }, [open]);
 
   const addDrink = (dt: (typeof DRINK_TYPES)[number]) => {
-    const entry: DrinkEntry = {
+    const entry = {
       id: Date.now().toString(),
       type: dt.label,
       emoji: dt.emoji,
       standardDrinks: dt.standardDrinks,
       timestamp: new Date(),
     };
-    setDrinks((prev) => [entry, ...prev]);
+    contextAddDrink(entry);
     setOpen(false);
+    const category = CATEGORY_MAP[dt.label] ?? 'cocktail';
+    const abv = dt.label === 'WINE' ? 12 : dt.label === 'SHOT' ? 40 : dt.label === 'COCKTAIL' ? 15 : 5;
+    const volumeMl = Math.round((dt.standardDrinks * 14 * 100) / (0.789 * abv));
+    api.logDrink({ drinkName: dt.label, category, abv, volumeMl }).catch(() => {});
   };
 
   if (!fontsLoaded) return null;
 
   return (
-    <DrinkContext.Provider value={{ bac, drinks, addDrink }}>
-      <View style={{ flex: 1, backgroundColor: '#000' }}>
-        <StatusBar barStyle="light-content" />
-        <HomePageContent onOpenTracker={() => setOpen(true)} />
+    <View style={{ flex: 1, backgroundColor: '#000' }}>
+      <StatusBar barStyle="light-content" />
+      <HomePageContent onOpenTracker={() => setOpen(true)} />
 
-        <TouchableOpacity style={styles.fab} onPress={() => setOpen(true)}>
-          <Text style={{ fontSize: 24 }}>🍺</Text>
-          <Text style={styles.fabText}>TRACK</Text>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.fab} onPress={() => setOpen(true)}>
+        <Text style={{ fontSize: 24 }}>🍺</Text>
+        <Text style={styles.fabText}>TRACK</Text>
+      </TouchableOpacity>
 
-        <Modal visible={open} transparent animationType="none">
-          <TouchableOpacity style={styles.modalOverlay} onPress={() => setOpen(false)} />
-          <Animated.View style={[styles.modalSheet, { transform: [{ translateY: slideY }] }]}>
-            <Text style={styles.modalTitle}>LOG A DRINK</Text>
-            <View style={styles.drinkGrid}>
-              {DRINK_TYPES.map((dt) => (
-                <TouchableOpacity key={dt.label} style={styles.drinkBtn} onPress={() => addDrink(dt)}>
-                  <Text style={{ fontSize: 30 }}>{dt.emoji}</Text>
-                  <Text style={styles.drinkBtnText}>{dt.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </Animated.View>
-        </Modal>
-      </View>
-    </DrinkContext.Provider>
+      <Modal visible={open} transparent animationType="none">
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setOpen(false)} />
+        <Animated.View style={[styles.modalSheet, { transform: [{ translateY: slideY }] }]}>
+          <Text style={styles.modalTitle}>LOG A DRINK</Text>
+          <View style={styles.drinkGrid}>
+            {DRINK_TYPES.map((dt) => (
+              <TouchableOpacity key={dt.label} style={styles.drinkBtn} onPress={() => addDrink(dt)}>
+                <Text style={{ fontSize: 30 }}>{dt.emoji}</Text>
+                <Text style={styles.drinkBtnText}>{dt.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Animated.View>
+      </Modal>
+    </View>
   );
 }
 
