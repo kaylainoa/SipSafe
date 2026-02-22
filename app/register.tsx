@@ -1,17 +1,18 @@
 import { api } from "@/constants/api";
+import { BebasNeue_400Regular, useFonts } from "@expo-google-fonts/bebas-neue";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const GENDERS = ["male", "female", "other"];
@@ -27,6 +28,11 @@ export default function RegisterPage() {
   const [heightIn, setHeightIn] = useState("");
   const [gender, setGender] = useState("male");
   const [loading, setLoading] = useState(false);
+
+  // Load Bebas Neue
+  const [fontsLoaded] = useFonts({
+    BebasNeue_400Regular,
+  });
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password || !weightLbs || !heightFt) {
@@ -63,6 +69,14 @@ export default function RegisterPage() {
     }
   };
 
+  if (!fontsLoaded) {
+    return (
+      <View style={[s.safe, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator color="#ff4000" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView
@@ -73,9 +87,8 @@ export default function RegisterPage() {
           {/* ══ HEADING ══ */}
           <View style={s.headingWrap}>
             <Text style={s.heading}>
-              {"Create your "}
-              <Text style={s.headingAccent}>SIP SAFE</Text>
-              {"\naccount"}
+              CREATE YOUR{"\n"}
+              <Text style={s.headingAccent}>SIP SAFE</Text> ACCOUNT
             </Text>
           </View>
 
@@ -83,16 +96,16 @@ export default function RegisterPage() {
           <View style={s.inputsWrap}>
             <TextInput
               style={s.input}
-              placeholder="Full Name"
-              placeholderTextColor="#5c5c5c"
+              placeholder="FULL NAME"
+              placeholderTextColor="rgba(255,255,255,0.3)"
               value={name}
               onChangeText={setName}
               returnKeyType="next"
             />
             <TextInput
               style={s.input}
-              placeholder="Email"
-              placeholderTextColor="#5c5c5c"
+              placeholder="EMAIL ADDRESS"
+              placeholderTextColor="rgba(255,255,255,0.3)"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -101,8 +114,8 @@ export default function RegisterPage() {
             />
             <TextInput
               style={s.input}
-              placeholder="Password"
-              placeholderTextColor="#5c5c5c"
+              placeholder="PASSWORD"
+              placeholderTextColor="rgba(255,255,255,0.3)"
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -114,8 +127,8 @@ export default function RegisterPage() {
             <View style={s.row}>
               <TextInput
                 style={[s.input, s.halfInput]}
-                placeholder="Height (ft)"
-                placeholderTextColor="#5c5c5c"
+                placeholder="HEIGHT (FT)"
+                placeholderTextColor="rgba(255,255,255,0.3)"
                 value={heightFt}
                 onChangeText={setHeightFt}
                 keyboardType="numeric"
@@ -123,8 +136,8 @@ export default function RegisterPage() {
               />
               <TextInput
                 style={[s.input, s.halfInput]}
-                placeholder="Height (in)"
-                placeholderTextColor="#5c5c5c"
+                placeholder="HEIGHT (IN)"
+                placeholderTextColor="rgba(255,255,255,0.3)"
                 value={heightIn}
                 onChangeText={setHeightIn}
                 keyboardType="numeric"
@@ -135,8 +148,8 @@ export default function RegisterPage() {
             {/* ══ WEIGHT ══ */}
             <TextInput
               style={s.input}
-              placeholder="Weight (lbs)"
-              placeholderTextColor="#5c5c5c"
+              placeholder="WEIGHT (LBS)"
+              placeholderTextColor="rgba(255,255,255,0.3)"
               value={weightLbs}
               onChangeText={setWeightLbs}
               keyboardType="numeric"
@@ -144,7 +157,7 @@ export default function RegisterPage() {
             />
 
             {/* ══ GENDER SELECTOR ══ */}
-            <Text style={s.sectionLabel}>Gender</Text>
+            <Text style={s.sectionLabel}>GENDER</Text>
             <View style={s.genderRow}>
               {GENDERS.map((g) => (
                 <TouchableOpacity
@@ -153,17 +166,20 @@ export default function RegisterPage() {
                   onPress={() => setGender(g)}
                 >
                   <Text
-                    style={[s.genderLabel, gender === g && s.genderLabelActive]}
+                    style={[
+                      s.genderLabel,
+                      gender === g && s.genderLabelActive,
+                    ]}
                   >
-                    {g.charAt(0).toUpperCase() + g.slice(1)}
+                    {g.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <Text style={s.disclaimer}>
-              Your weight and height are used only to estimate BAC. This data is
-              stored securely and never shared.
+              YOUR WEIGHT AND HEIGHT ARE USED ONLY TO ESTIMATE BAC. DATA IS
+              STORED SECURELY AND NEVER SHARED.
             </Text>
           </View>
 
@@ -177,14 +193,15 @@ export default function RegisterPage() {
             {loading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={s.ctaLabel}>Create Account</Text>
+              <Text style={s.ctaLabel}>CREATE ACCOUNT</Text>
             )}
           </TouchableOpacity>
 
           {/* ══ LOGIN LINK ══ */}
           <TouchableOpacity onPress={() => router.back()} style={s.loginWrap}>
             <Text style={s.loginText}>
-              Already have an account? <Text style={s.loginLink}>Sign In</Text>
+              ALREADY HAVE AN ACCOUNT?{" "}
+              <Text style={s.loginLink}>SIGN IN</Text>
             </Text>
           </TouchableOpacity>
 
@@ -196,10 +213,9 @@ export default function RegisterPage() {
 }
 
 const BG = "#111111";
-const INPUT_BG = "#242424";
+const INPUT_BG = "#1F1F1F";
 const ORANGE = "#ff4000";
-const SERIF = "InstrumentSerif-Regular";
-const SANS = Platform.select({ ios: "System", android: "sans-serif" });
+const BEBAS = "BebasNeue_400Regular";
 
 const s = StyleSheet.create({
   safe: {
@@ -211,7 +227,6 @@ const s = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: BG,
     paddingHorizontal: 26,
     paddingTop: Platform.OS === "android" ? 44 : 16,
   },
@@ -221,32 +236,32 @@ const s = StyleSheet.create({
     marginTop: 36,
   },
   heading: {
-    fontFamily: SERIF,
-    fontSize: 38,
-    lineHeight: 48,
+    fontFamily: BEBAS,
+    fontSize: 48,
+    lineHeight: 46,
     color: "#ffffff",
     textAlign: "left",
-    letterSpacing: -0.5,
+    letterSpacing: 0.5,
   },
   headingAccent: {
-    fontFamily: SERIF,
-    fontSize: 38,
+    fontFamily: BEBAS,
     color: ORANGE,
   },
 
   /* ── Inputs ── */
   inputsWrap: {
     marginTop: 40,
-    gap: 14,
+    gap: 12,
   },
   input: {
     backgroundColor: INPUT_BG,
     color: "#ffffff",
-    fontSize: 18,
-    fontFamily: SERIF,
-    paddingVertical: 17,
+    fontSize: 20,
+    fontFamily: BEBAS,
+    paddingVertical: 15,
     paddingHorizontal: 22,
-    borderRadius: 100,
+    borderRadius: 12,
+    letterSpacing: 1,
   },
   row: {
     flexDirection: "row",
@@ -259,10 +274,11 @@ const s = StyleSheet.create({
   /* ── Gender ── */
   sectionLabel: {
     color: "rgba(255,255,255,0.45)",
-    fontSize: 13,
-    fontFamily: SANS,
+    fontSize: 16,
+    fontFamily: BEBAS,
     marginLeft: 8,
     marginBottom: -4,
+    letterSpacing: 1,
   },
   genderRow: {
     flexDirection: "row",
@@ -271,7 +287,7 @@ const s = StyleSheet.create({
   genderPill: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 100,
+    borderRadius: 12,
     backgroundColor: INPUT_BG,
     alignItems: "center",
     borderWidth: 1,
@@ -283,9 +299,9 @@ const s = StyleSheet.create({
   },
   genderLabel: {
     color: "#666",
-    fontSize: 14,
-    fontFamily: SANS,
-    fontWeight: "500",
+    fontSize: 18,
+    fontFamily: BEBAS,
+    letterSpacing: 0.5,
   },
   genderLabelActive: {
     color: "#ffffff",
@@ -294,33 +310,30 @@ const s = StyleSheet.create({
   /* ── Disclaimer ── */
   disclaimer: {
     color: "rgba(255,255,255,0.25)",
-    fontSize: 12,
-    fontFamily: SANS,
+    fontSize: 13,
+    fontFamily: BEBAS,
     textAlign: "center",
     lineHeight: 18,
     marginTop: 4,
     paddingHorizontal: 8,
+    letterSpacing: 0.5,
   },
 
   /* ── CTA ── */
   cta: {
     backgroundColor: ORANGE,
-    borderRadius: 100,
-    height: 58,
+    borderRadius: 12,
+    height: 60,
     marginTop: 32,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: ORANGE,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 18,
-    elevation: 10,
+    elevation: 8,
   },
   ctaLabel: {
-    fontFamily: SERIF,
-    fontSize: 22,
+    fontFamily: BEBAS,
+    fontSize: 26,
     color: "#ffffff",
-    letterSpacing: 0.3,
+    letterSpacing: 1.5,
   },
 
   /* ── Login link ── */
@@ -330,11 +343,11 @@ const s = StyleSheet.create({
   },
   loginText: {
     color: "rgba(255,255,255,0.45)",
-    fontSize: 14,
-    fontFamily: SANS,
+    fontSize: 16,
+    fontFamily: BEBAS,
+    letterSpacing: 1,
   },
   loginLink: {
     color: ORANGE,
-    fontWeight: "600",
   },
 });
