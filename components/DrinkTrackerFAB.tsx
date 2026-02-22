@@ -33,6 +33,7 @@
  */
 
 import { AddIcon } from "@/components/AddIcon";
+import { StopIcon } from "@/components/StopIcon";
 import { api } from "@/constants/api";
 import { DrinkEntry, useDrinkContext } from "@/contexts/DrinkContext";
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
@@ -767,7 +768,11 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
               <Text style={[fabS.badgeTxt, { color: isDanger ? C.red : C.redDark }]}>{(bac ?? 0).toFixed(2)}</Text>
             </View>
           )}
-          <AddIcon width={40} color="#ff4000" />
+          {(bac ?? 0) >= 0.15 ? (
+            <StopIcon width={40} color="#ff4000" />
+          ) : (
+            <AddIcon width={40} color="#ff4000" />
+          )}
         </TouchableOpacity>
       </Animated.View>
 

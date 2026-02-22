@@ -24,13 +24,39 @@ import { BebasNeue_400Regular, useFonts } from '@expo-google-fonts/bebas-neue';
 import { SpecialElite_400Regular } from '@expo-google-fonts/special-elite';
 
 const THEME_COLOR = '#FF4000';
+const SAFE_STREAK_BAC_LIMIT = 0.15; // Safe streak counts days under this limit
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+type LogEntry = { createdAt: string; estimatedBacContribution?: number };
+
+/** Compute consecutive days (ending yesterday) where daily BAC stayed under SAFE_STREAK_BAC_LIMIT. */
+function computeSafeStreak(logs: LogEntry[]): number {
+  const byDay = new Map<string, number>();
+  for (const log of logs) {
+    const key = new Date(log.createdAt).toISOString().slice(0, 10);
+    const cur = byDay.get(key) ?? 0;
+    byDay.set(key, cur + (log.estimatedBacContribution ?? 0));
+  }
+  let streak = 0;
+  const now = new Date();
+  for (let d = 1; d <= 365; d++) {
+    const day = new Date(now);
+    day.setDate(day.getDate() - d);
+    day.setHours(0, 0, 0, 0);
+    const key = day.toISOString().slice(0, 10);
+    const dayTotal = byDay.get(key) ?? 0;
+    if (dayTotal >= SAFE_STREAK_BAC_LIMIT) break;
+    streak += 1;
+  }
+  return streak;
+}
 
 function HomePageContent() {
   const router = useRouter();
   const { bac } = useDrinkContext();
   const [weeklyCounts, setWeeklyCounts] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+  const [safeStreakDays, setSafeStreakDays] = useState<number>(0);
   const safeBac = bac ?? 0;
 
   const loadWeekly = useCallback(async () => {
@@ -73,9 +99,23 @@ function HomePageContent() {
     }
   }, []);
 
+  const loadSafeStreak = useCallback(async () => {
+    try {
+      const raw = (await api.getLogs({ limit: 500 })) as LogEntry[];
+      const list = Array.isArray(raw) ? raw : [];
+      setSafeStreakDays(computeSafeStreak(list));
+    } catch {
+      setSafeStreakDays(0);
+    }
+  }, []);
+
   useEffect(() => {
     loadWeekly();
   }, [loadWeekly]);
+
+  useEffect(() => {
+    loadSafeStreak();
+  }, [loadSafeStreak]);
 
   const handleAlertFriend = useCallback(async () => {
     let locationText = "Location unavailable.";
@@ -206,8 +246,10 @@ function HomePageContent() {
         <View style={styles.actionButtonsWrapper}>
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={styles.cardTitle}>Save Streak</Text>
-              <Text style={styles.cardValue}>14 DAYS</Text>
+              <Text style={styles.cardTitle}>Safe Streak</Text>
+              <Text style={styles.cardValue}>
+                {safeStreakDays} {safeStreakDays === 1 ? 'DAY' : 'DAYS'}
+              </Text>
             </View>
             <TouchableOpacity
               style={[styles.statCard, { backgroundColor: 'rgba(26,26,26,0.7)' }]}
