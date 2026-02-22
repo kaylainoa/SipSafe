@@ -32,6 +32,7 @@
  * ────────────────────────────────────────────────────────────────────────────
  */
 
+import { DrinkEntry, useDrinkContext } from "@/contexts/DrinkContext";
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
 import { speakText } from "@/lib/elevenlabsTTS";
 import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
@@ -67,16 +68,16 @@ const C = {
   surface: "#161210",
   surfaceAlt: "#1E1A17",
   border: "#2C2520",
-  red: "#C8321A",
+  red: "#ff4000",
   redDark: "#7A1E0E",
-  orange: "#D4622A",
+  orange: "#ff4000",
   orangeLight: "#FF8C42", // Added for rim-light effect
   safe: "#2E7D4F",
   caution: "#B8860B",
   text: "#F0EBE1",
   muted: "#6B5E52",
 };
-const MONO = Platform.OS === "ios" ? "Courier New" : "monospace";
+const MONO = "BebasNeue";
 
 // ─── Drink types (static + from API) ──────────────────────────────────────────
 type DrinkOption = {
@@ -106,15 +107,6 @@ const CATEGORY_EMOJI: Record<string, string> = {
 };
 
 // ─── Types & BAC logic ────────────────────────────────────────────────────────
-interface DrinkEntry {
-  id: string;
-  type: string;
-  emoji: string;
-  standardDrinks: number;
-  timestamp: Date;
-}
-
-const WIDMARK_R = { male: 0.73, female: 0.66 };
 const BAC_SAFE = 0.06;
 const BAC_CAUTION = 0.1;
 const BAC_DANGER = 0.15;
@@ -123,19 +115,6 @@ const DEFAULT_WEIGHT_LBS = 130;
 const DEFAULT_GENDER: "male" | "female" = "female";
 
 type BACProfile = { weightLbs: number; gender: "male" | "female" };
-
-function calcBAC(drinks: DrinkEntry[], profile: BACProfile): number {
-  if (!drinks.length) return 0;
-  const wKg = profile.weightLbs * 0.453592;
-  const r = WIDMARK_R[profile.gender];
-  let bac = 0;
-  for (const d of drinks) {
-    const hrs = (Date.now() - d.timestamp.getTime()) / 3_600_000;
-    const peak = ((d.standardDrinks * 14) / (wKg * 1000 * r)) * 100;
-    bac += peak - Math.min(peak, hrs * 0.015);
-  }
-  return Math.max(0, bac);
-}
 
 function labelToCategory(label: string): string {
   const l = label.toUpperCase();
@@ -207,17 +186,18 @@ function getBACStatus(bac: number) {
 // ─── Sub-Components ──────────────────────────────────────────────────────────
 
 const BACGauge = ({ bac }: { bac: number }) => {
-  const status = getBACStatus(bac);
+  const b = bac ?? 0;
+  const status = getBACStatus(b);
   const trackW = SW - 64;
-  const fillPct = Math.min(bac / 0.2, 1);
+  const fillPct = Math.min(b / 0.2, 1);
 
   return (
-    <View style={[ gS.wrap, bac >= BAC_DANGER && { borderColor: C.red, borderWidth: 2 } ]}>
+    <View style={[ gS.wrap, b >= BAC_DANGER && { borderColor: C.red, borderWidth: 2 } ]}>
       <View style={gS.topRow}>
         <View>
           <Text style={gS.bacLabel}>BLOOD ALCOHOL CONTENT</Text>
           <Text style={[gS.bacNum, { color: status.color }]}>
-            {bac.toFixed(3)}
+            {(bac ?? 0).toFixed(3)}
             <Text style={gS.bacPct}>%</Text>
           </Text>
         </View>
@@ -248,18 +228,18 @@ const BACGauge = ({ bac }: { bac: number }) => {
 const gS = StyleSheet.create({
   wrap: { backgroundColor: C.surface, borderRadius: 2, borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 12 },
   topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
-  bacLabel: { color: C.muted, fontSize: 9, fontFamily: MONO, letterSpacing: 2.5, marginBottom: 4 },
-  bacNum: { fontSize: 48, fontFamily: MONO, fontWeight: "900", letterSpacing: -2, lineHeight: 48 },
-  bacPct: { fontSize: 18, fontWeight: "400", letterSpacing: 0 },
+  bacLabel: { color: C.muted, fontSize: 12, fontFamily: MONO, letterSpacing: 2.5, marginBottom: 4 },
+  bacNum: { fontSize: 52, fontFamily: MONO, fontWeight: "900", letterSpacing: -2, lineHeight: 52 },
+  bacPct: { fontSize: 20, fontWeight: "400", letterSpacing: 0 },
   badge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 2, borderWidth: 1.5, marginTop: 4 },
-  badgeTxt: { fontSize: 11, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
+  badgeTxt: { fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
   track: { height: 12, backgroundColor: C.surfaceAlt, borderRadius: 1, overflow: "visible", marginBottom: 5, position: "relative", borderWidth: 1, borderColor: C.border },
   fill: { height: "100%", borderRadius: 1, position: "absolute", left: 0, opacity: 0.9 },
   tick: { position: "absolute", top: -4, width: 2, height: 20, backgroundColor: C.bg },
   zoneRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  zoneLbl: { fontSize: 8, fontFamily: MONO, letterSpacing: 1.5, fontWeight: "900" },
+  zoneLbl: { fontSize: 11, fontFamily: MONO, letterSpacing: 1.5, fontWeight: "900" },
   advice: { borderWidth: 1, borderRadius: 2, padding: 10 },
-  adviceTxt: { fontSize: 11, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
+  adviceTxt: { fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
 });
 
 const StatBox = ({ label, value, color }: { label: string; value: string; color?: string }) => (
@@ -270,8 +250,8 @@ const StatBox = ({ label, value, color }: { label: string; value: string; color?
 );
 const stS = StyleSheet.create({
   box: { flex: 1, alignItems: "center", backgroundColor: C.surface, borderRadius: 2, paddingVertical: 12, borderWidth: 1, borderColor: C.border },
-  val: { color: C.text, fontSize: 20, fontFamily: MONO, fontWeight: "900" },
-  lbl: { color: C.muted, fontSize: 8, fontFamily: MONO, marginTop: 4, letterSpacing: 2, textAlign: "center" },
+  val: { color: C.text, fontSize: 24, fontFamily: MONO, fontWeight: "900" },
+  lbl: { color: C.muted, fontSize: 11, fontFamily: MONO, marginTop: 4, letterSpacing: 2, textAlign: "center" },
 });
 
 const DangerBanner = ({ onAlert }: { onAlert: () => void }) => (
@@ -289,8 +269,8 @@ const DangerBanner = ({ onAlert }: { onAlert: () => void }) => (
 const bnS = StyleSheet.create({
   wrap: { flexDirection: "row", alignItems: "center", backgroundColor: C.redDark, borderRadius: 2, padding: 14, marginBottom: 12, gap: 12, borderWidth: 1.5, borderColor: C.red, borderStyle: "dashed" },
   skull: { fontSize: 26, color: C.paper },
-  title: { color: C.paper, fontSize: 13, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
-  sub: { color: "#FFB3B3", fontSize: 9, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
+  title: { color: C.paper, fontSize: 15, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
+  sub: { color: "#FFB3B3", fontSize: 12, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
   arrow: { color: C.paper, fontSize: 22 },
 });
 
@@ -306,8 +286,8 @@ const WaterNudge = ({ onDismiss }: { onDismiss: () => void }) => (
 const wS = StyleSheet.create({
   wrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#0A1520", borderWidth: 1, borderColor: "#2A4A6A", borderStyle: "dashed", borderRadius: 2, padding: 12, marginBottom: 12, gap: 10 },
   icon: { fontSize: 16 },
-  text: { flex: 1, color: "#7EB8D8", fontSize: 9, fontFamily: MONO, letterSpacing: 1, lineHeight: 14 },
-  ok: { color: "#7EB8D8", fontSize: 11, fontFamily: MONO, fontWeight: "900", letterSpacing: 2, paddingLeft: 6 },
+  text: { flex: 1, color: "#7EB8D8", fontSize: 12, fontFamily: MONO, letterSpacing: 1, lineHeight: 17 },
+  ok: { color: "#7EB8D8", fontSize: 13, fontFamily: MONO, fontWeight: "900", letterSpacing: 2, paddingLeft: 6 },
 });
 
 const DrinkLogItem = ({ entry, onRemove }: { entry: DrinkEntry; onRemove: () => void }) => {
@@ -330,9 +310,9 @@ const liS = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", paddingVertical: 11, paddingHorizontal: 12, backgroundColor: C.surfaceAlt, borderRadius: 2, marginBottom: 6, gap: 10, borderLeftWidth: 3, borderLeftColor: C.red },
   emoji: { fontSize: 20 },
   info: { flex: 1 },
-  name: { color: C.text, fontSize: 12, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
-  time: { color: C.muted, fontSize: 9, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
-  x: { color: C.muted, fontSize: 13 },
+  name: { color: C.text, fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
+  time: { color: C.muted, fontSize: 12, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
+  x: { color: C.muted, fontSize: 15 },
 });
 
 const Divider = ({ label }: { label: string }) => (
@@ -345,7 +325,7 @@ const Divider = ({ label }: { label: string }) => (
 const dvS = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 14 },
   line: { flex: 1, height: 1, backgroundColor: C.border },
-  lbl: { color: C.muted, fontSize: 9, fontFamily: MONO, letterSpacing: 3, fontWeight: "900" },
+  lbl: { color: C.muted, fontSize: 12, fontFamily: MONO, letterSpacing: 3, fontWeight: "900" },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -353,25 +333,23 @@ const dvS = StyleSheet.create({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function DrinkTrackerFAB({ children }: { children: React.ReactNode }) {
+  const { drinks, bac, addDrink: contextAddDrink, removeDrink: contextRemoveDrink, clearDrinks } = useDrinkContext();
   const [open, setOpen] = useState(false);
-  const [drinks, setDrinks] = useState<DrinkEntry[]>([]);
   const [drinkOptionsFromApi, setDrinkOptionsFromApi] = useState<DrinkOption[]>([]);
-  const [bac, setBac] = useState(0);
   const [verifying, setVerifying] = useState(false);
   const [waterNudge, setWaterNudge] = useState(false);
-  const [autoAlertSent, setAutoAlertSent] = useState(false);
   const [sessionStart] = useState(new Date());
-  const [tick, setTick] = useState(0);
-  const [drinkSearchQuery, setDrinkSearchQuery] = useState("");
   const [bacProfile, setBacProfile] = useState<BACProfile>({ weightLbs: DEFAULT_WEIGHT_LBS, gender: DEFAULT_GENDER });
+  const [autoAlertSent, setAutoAlertSent] = useState(false);
+  const [drinkSearchQuery, setDrinkSearchQuery] = useState("");
 
   const drinkOptions: DrinkOption[] = [...DRINK_TYPES, ...drinkOptionsFromApi];
   const filteredDrinkOptions = drinkSearchQuery.trim()
     ? drinkOptions.filter((d) => d.label.toLowerCase().includes(drinkSearchQuery.trim().toLowerCase()))
     : drinkOptions;
 
-  const pulse = useRef(new Animated.Value(1)).current;
-  const pressAnim = useRef(new Animated.Value(1)).current; // New press animation value
+  const pulse  = useRef(new Animated.Value(1)).current;
+  const pressAnim = useRef(new Animated.Value(1)).current;
   const slideY = useRef(new Animated.Value(800)).current;
   const dragY = useRef(new Animated.Value(0)).current;
 
@@ -417,13 +395,6 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    const t = setInterval(() => setTick((n) => n + 1), 60_000);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => { setBac(calcBAC(drinks, bacProfile)); }, [drinks, tick, bacProfile]);
-
-  useEffect(() => {
     if (bac >= BAC_DANGER) {
       Animated.loop(
         Animated.sequence([
@@ -464,21 +435,22 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     return () => { cancelled = true; };
   }, []);
 
-  const removeDrink = useCallback((id: string) => { setDrinks((prev) => prev.filter((d) => d.id !== id)); }, []);
+  const removeDrink = useCallback((id: string) => contextRemoveDrink(id), [contextRemoveDrink]);
 
-  const addDrink = useCallback((dt: DrinkOption) => {
-    const entry: DrinkEntry = { id: Date.now().toString(), type: dt.label, emoji: dt.emoji, standardDrinks: dt.standardDrinks, timestamp: new Date() };
-    setDrinks((prev) => {
-      const next = [entry, ...prev];
-      if (next.length % 3 === 0) setWaterNudge(true);
-      return next;
-    });
-    (async () => {
-      try {
-        await api.logDrink({ drinkId: dt.id, drinkName: dt.label, category: labelToCategory(dt.label), abv: dt.abv, volumeMl: volumeMlFromStandardDrinks(dt.standardDrinks, dt.abv) });
-      } catch {}
-    })();
-  }, []);
+  const addDrink = useCallback(async (dt: DrinkOption) => {
+    const entry: DrinkEntry = {
+      id: Date.now().toString(),
+      type: dt.label,
+      emoji: dt.emoji,
+      standardDrinks: dt.standardDrinks,
+      timestamp: new Date(),
+    };
+    try {
+      await api.logDrink({ drinkId: dt.id, drinkName: dt.label, category: labelToCategory(dt.label), abv: dt.abv, volumeMl: volumeMlFromStandardDrinks(dt.standardDrinks, dt.abv) });
+      contextAddDrink(entry);
+      if ((drinks.length + 1) % 3 === 0) setWaterNudge(true);
+    } catch {}
+  }, [bacProfile, contextAddDrink, drinks.length]);
 
   const verifyAndAddDrink = useCallback(async (dt: DrinkOption) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -504,6 +476,47 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     } finally { setVerifying(false); }
   }, [addDrink, verifying]);
 
+  const promptVerifyDrink = useCallback(
+    async (drinkIdToRevoke?: string) => {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Camera access needed", "Allow camera access to verify your drink for tampering.");
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], allowsEditing: false, quality: 0.8, base64: true });
+      if (result.canceled || !result.assets[0]?.base64) return;
+      setVerifying(true);
+      try {
+        const analysis = await analyzeDrinkForSpoofing(
+          result.assets[0].base64,
+          (result.assets[0].mimeType as "image/jpeg" | "image/png") ?? "image/jpeg"
+        );
+        if (!analysis.safe && drinkIdToRevoke) removeDrink(drinkIdToRevoke);
+        Alert.alert(
+          analysis.safe ? "Drink looks OK" : "Possible concerns",
+          analysis.summary + (analysis.concerns?.length ? "\n\n" + analysis.concerns.join("\n") : "")
+        );
+      } finally {
+        setVerifying(false);
+      }
+    },
+    [removeDrink]
+  );
+
+  const showVerifyDrinkPrompt = useCallback(
+    (entry: { id: string }) => {
+      Alert.alert(
+        "Verify your drink?",
+        "Take a photo to check for signs of tampering or spoofing. If concerns are found, the drink will not be logged.",
+        [
+          { text: "Skip", style: "cancel" },
+          { text: "Take photo", onPress: () => promptVerifyDrink(entry.id) },
+        ]
+      );
+    },
+    [promptVerifyDrink]
+  );
+
   const endSession = () =>
     Alert.alert("END SESSION", "Clear all drinks and reset BAC?", [
       { text: "CANCEL", style: "cancel" },
@@ -511,7 +524,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         text: "RESET",
         style: "destructive",
         onPress: () => {
-          setDrinks([]);
+          clearDrinks();
           setWaterNudge(false);
           setAutoAlertSent(false);
           setOpen(false);
@@ -654,7 +667,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         >
           {drinks.length > 0 && (
             <View style={fabS.badge}>
-              <Text style={[fabS.badgeTxt, { color: isDanger ? C.red : C.redDark }]}>{bac.toFixed(2)}</Text>
+              <Text style={[fabS.badgeTxt, { color: isDanger ? C.red : C.redDark }]}>{(bac ?? 0).toFixed(2)}</Text>
             </View>
           )}
           <Text style={fabS.label}>TRACK</Text>
@@ -683,7 +696,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
           </View>
           <View style={shS.ticker}>
             <Text style={shS.tickerTxt} numberOfLines={1}>
-              DRINKS: {drinks.length} ·· STD: {bac.toFixed(3)}% ·· SOBER IN: {fmtSober(bac)}
+              DRINKS: {drinks.length} ·· STD: {(bac ?? 0).toFixed(3)}% ·· SOBER IN: {fmtSober(bac ?? 0)}
             </Text>
           </View>
           <ScrollView style={shS.scroll} contentContainerStyle={shS.content} keyboardShouldPersistTaps="handled">
@@ -692,15 +705,34 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
             <View style={shS.searchWrap}>
               <TextInput style={shS.searchInput} placeholder="Search drinks..." placeholderTextColor={C.muted} value={drinkSearchQuery} onChangeText={setDrinkSearchQuery} />
             </View>
-            <View style={shS.grid}>
-              {filteredDrinkOptions.map((dt) => (
-                <TouchableOpacity key={dt.id ?? dt.label} style={shS.drinkBtn} onPress={() => verifyAndAddDrink(dt)}>
-                  <Text style={shS.drinkEmoji}>{dt.emoji}</Text>
-                  <Text style={shS.drinkName}>{dt.label}</Text>
-                </TouchableOpacity>
-              ))}
+            <View style={shS.gridViewport}>
+              <ScrollView
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={filteredDrinkOptions.length > 9}
+                contentContainerStyle={shS.grid}
+              >
+                {filteredDrinkOptions.map((dt) => (
+                  <TouchableOpacity key={dt.id ?? dt.label} style={shS.drinkBtn} onPress={() => verifyAndAddDrink(dt)}>
+                    <Text style={shS.drinkEmoji}>{dt.emoji}</Text>
+                    <Text style={shS.drinkName}>{dt.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
             <TouchableOpacity style={shS.alertBtn} onPress={sendAlert}><Text style={shS.alertBtnTxt}>📍 ALERT MY FRIENDS</Text></TouchableOpacity>
+            <View style={shS.logSection}>
+              <Text style={shS.logTitle}>DRINK LOG</Text>
+              {drinks.length === 0 ? (
+                <Text style={shS.logEmpty}>NO DRINKS LOGGED YET.</Text>
+              ) : (
+                drinks.map((drink) => (
+                  <View key={drink.id} style={shS.logRow}>
+                    <Text style={shS.logDrink}>{drink.emoji} {drink.type}</Text>
+                    <Text style={shS.logBac}>{drink.standardDrinks.toFixed(1)} STD</Text>
+                  </View>
+                ))
+              )}
+            </View>
             <Text style={shS.disclaimer}>BAC IS AN ESTIMATE. NEVER DRIVE IMPAIRED.</Text>
             <View style={{ height: 48 }} />
           </ScrollView>
@@ -728,17 +760,17 @@ const fabS = StyleSheet.create({
     justifyContent: "center",
     
     // GLOW EFFECT: Shadow remains punchy to define the square shape
-    shadowColor: "#D4622A",
+    shadowColor: "#ff4000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.9,
     shadowRadius: 16,
     elevation: 15,
   },
-  label: { 
+  label: {
     color: "#F0EBE1", 
-    fontSize: 16, 
-    fontFamily: "RubikSprayPaint", 
-    letterSpacing: 1, 
+    fontSize: 18, 
+    fontFamily: "BebasNeue", 
+    letterSpacing: 1.4, 
     textAlign: 'center' 
   },
   badge: { 
@@ -751,11 +783,11 @@ const fabS = StyleSheet.create({
     paddingHorizontal: 6, 
     paddingVertical: 3, 
     borderWidth: 1.5, 
-    borderColor: "#D4622A", 
+    borderColor: "#ff4000", 
     zIndex: 1 
   },
-  badgeTxt: { 
-    fontSize: 11, 
+  badgeTxt: {
+    fontSize: 14,
     fontFamily: MONO, 
     fontWeight: "900" 
   },
@@ -764,28 +796,35 @@ const fabS = StyleSheet.create({
 const shS = StyleSheet.create({
   overlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.72)" },
   verifyingOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 1000, alignItems: "center", justifyContent: "center" },
-  verifyingTxt: { color: "#D4622A", fontSize: 11, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
-  sheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#0E0B09", borderTopLeftRadius: 4, borderTopRightRadius: 4, borderTopWidth: 2, borderTopColor: "#C8321A", maxHeight: "90%" },
+  verifyingTxt: { color: "#ff4000", fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
+  sheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#0E0B09", borderTopLeftRadius: 4, borderTopRightRadius: 4, borderTopWidth: 2, borderTopColor: "#ff4000", maxHeight: "90%" },
   handleRow: { alignItems: "center", paddingTop: 10, paddingBottom: 2 },
   handle: { width: 36, height: 3, backgroundColor: "#2C2520", borderRadius: 2 },
-  handleHint: { color: "#2C2520", fontSize: 8, fontFamily: MONO, letterSpacing: 2 },
+  handleHint: { color: "#2C2520", fontSize: 11, fontFamily: MONO, letterSpacing: 2 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12 },
-  eyebrow: { color: "#6B5E52", fontSize: 9, fontFamily: MONO, letterSpacing: 2 },
-  title: { color: "#F0EBE1", fontSize: 20, fontFamily: MONO, fontWeight: "900", letterSpacing: 3 },
-  titleSub: { color: "#6B5E52", fontSize: 13, fontWeight: "400" },
+  eyebrow: { color: "#6B5E52", fontSize: 12, fontFamily: MONO, letterSpacing: 2 },
+  title: { color: "#F0EBE1", fontSize: 24, fontFamily: MONO, fontWeight: "900", letterSpacing: 3 },
+  titleSub: { color: "#6B5E52", fontSize: 15, fontWeight: "400" },
   endBtn: { borderWidth: 1.5, borderColor: "#2C2520", borderRadius: 2, paddingHorizontal: 14, paddingVertical: 8 },
-  endBtnTxt: { color: "#6B5E52", fontSize: 10, fontFamily: MONO, fontWeight: "900" },
-  ticker: { backgroundColor: "#C8321A", paddingVertical: 5, paddingHorizontal: 14 },
-  tickerTxt: { color: "#F0EBE1", fontSize: 9, fontFamily: MONO, fontWeight: "700" },
+  endBtnTxt: { color: "#6B5E52", fontSize: 13, fontFamily: MONO, fontWeight: "900" },
+  ticker: { backgroundColor: "#ff4000", paddingVertical: 5, paddingHorizontal: 14 },
+  tickerTxt: { color: "#F0EBE1", fontSize: 12, fontFamily: MONO, fontWeight: "700" },
   scroll: { flex: 1 },
   content: { padding: 14 },
   searchWrap: { marginBottom: 12 },
-  searchInput: { backgroundColor: "#1E1A17", borderWidth: 1, borderColor: "#2C2520", borderRadius: 2, paddingHorizontal: 14, paddingVertical: 12, color: "#F0EBE1", fontSize: 14, fontFamily: MONO },
+  searchInput: { backgroundColor: "#1E1A17", borderWidth: 1, borderColor: "#2C2520", borderRadius: 2, paddingHorizontal: 14, paddingVertical: 12, color: "#F0EBE1", fontSize: 16, fontFamily: MONO },
+  gridViewport: { maxHeight: 260, marginBottom: 14 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
   drinkBtn: { width: (SW - 52) / 3, backgroundColor: "#161210", borderRadius: 2, borderWidth: 1, borderColor: "#2C2520", alignItems: "center", paddingVertical: 14 },
   drinkEmoji: { fontSize: 24, marginBottom: 5 },
-  drinkName: { color: "#F0EBE1", fontSize: 9, fontFamily: MONO, fontWeight: "900", textAlign: "center" },
-  alertBtn: { backgroundColor: "#161210", borderWidth: 1.5, borderColor: "#D4622A", borderRadius: 2, paddingVertical: 15, alignItems: "center" },
-  alertBtnTxt: { color: "#D4622A", fontSize: 12, fontFamily: MONO, fontWeight: "900", letterSpacing: 2.5 },
-  disclaimer: { color: "#2C2520", fontSize: 8, fontFamily: MONO, textAlign: "center", marginTop: 20 },
+  drinkName: { color: "#F0EBE1", fontSize: 12, fontFamily: MONO, fontWeight: "900", textAlign: "center" },
+  alertBtn: { backgroundColor: "#161210", borderWidth: 1.5, borderColor: "#ff4000", borderRadius: 2, paddingVertical: 15, alignItems: "center" },
+  alertBtnTxt: { color: "#ff4000", fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2.5 },
+  logSection: { marginTop: 12, backgroundColor: "#161210", borderWidth: 1, borderColor: "#2C2520", borderRadius: 2, padding: 12 },
+  logTitle: { color: "#F0EBE1", fontSize: 13, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5, marginBottom: 8 },
+  logEmpty: { color: "#6B5E52", fontSize: 13, fontFamily: MONO },
+  logRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: "#2C2520" },
+  logDrink: { color: "#F0EBE1", fontSize: 13, fontFamily: MONO, fontWeight: "700" },
+  logBac: { color: "#ff4000", fontSize: 13, fontFamily: MONO, fontWeight: "900" },
+  disclaimer: { color: "#2C2520", fontSize: 11, fontFamily: MONO, textAlign: "center", marginTop: 20 },
 });

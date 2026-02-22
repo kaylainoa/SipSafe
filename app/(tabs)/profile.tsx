@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  ImageBackground,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -140,7 +141,7 @@ const EditModal = ({
         placeholder={placeholder ?? label}
         placeholderTextColor="#555"
         keyboardType={keyboardType ?? "default"}
-        selectionColor="#D4622A"
+        selectionColor="#ff4000"
       />
     </View>
   );
@@ -179,7 +180,7 @@ const EditModal = ({
                       onChangeText={(v) => updateContact(i, "label", v)}
                       placeholder="Label (e.g. Mom)"
                       placeholderTextColor="#555"
-                      selectionColor="#D4622A"
+                      selectionColor="#ff4000"
                     />
                     <TouchableOpacity onPress={() => removeContact(i)} style={styles.removeBtn}>
                       <Text style={styles.removeBtnText}>✕</Text>
@@ -192,7 +193,7 @@ const EditModal = ({
                     placeholder="Phone number"
                     placeholderTextColor="#555"
                     keyboardType="phone-pad"
-                    selectionColor="#D4622A"
+                    selectionColor="#ff4000"
                   />
                 </View>
               ))}
@@ -376,25 +377,38 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="light-content" backgroundColor="#111" />
-        <View style={styles.loadingWrap}>
-          <Text style={styles.loadingText}>Loading profile…</Text>
-        </View>
-      </SafeAreaView>
+      <ImageBackground
+        source={require("@/assets/images/background.png")}
+        style={styles.bgImage}
+        resizeMode="cover"
+      >
+        <SafeAreaView style={styles.safe}>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" />
+          <View style={styles.loadingWrap}>
+            <Text style={styles.loadingText}>Loading profile…</Text>
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#111" />
+    <ImageBackground
+      source={require("@/assets/images/background.png")}
+      style={styles.bgImage}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" />
 
-      <ScrollView
+        <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.screenLabel}>Profile</Text>
+        <View style={styles.navPill}>
+          <Text style={styles.navPillText}>PROFILE DOSSIER</Text>
+        </View>
 
         <View style={styles.avatarWrapper}>
           <View style={styles.avatar}>
@@ -402,7 +416,8 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <Text style={styles.welcome}>Welcome, {profile.name.split(" ")[0]}!</Text>
+        <Text style={styles.welcome}>WELCOME, {profile.name.split(" ")[0]}!</Text>
+        <Text style={styles.subWelcome}>ACCOUNT + SAFETY CONTACTS</Text>
 
         <View style={styles.card}>
           <InfoRow label="Name:" value={profile.name} />
@@ -433,12 +448,8 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.editBtn}
-            onPress={() => setModalVisible(true)}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.editBtnText}>Edit Info</Text>
+          <TouchableOpacity style={styles.editBtn} onPress={() => setModalVisible(true)} activeOpacity={0.85}>
+            <Text style={styles.editBtnText}>EDIT INFO</Text>
           </TouchableOpacity>
 
           {/* 4. Logout Button */}
@@ -447,25 +458,26 @@ export default function ProfileScreen() {
             onPress={handleLogout}
             activeOpacity={0.7}
           >
-            <Text style={styles.logoutText}>Sign Out</Text>
+            <Text style={styles.logoutText}>SIGN OUT</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+        </ScrollView>
 
-      <EditModal
-        visible={modalVisible}
-        profile={profile}
-        onSave={handleSaveProfile}
-        onClose={() => setModalVisible(false)}
-        saving={saving}
-      />
-    </SafeAreaView>
+        <EditModal
+          visible={modalVisible}
+          profile={profile}
+          onSave={handleSaveProfile}
+          onClose={() => setModalVisible(false)}
+          saving={saving}
+        />
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const ORANGE = "#D4622A";
+const ORANGE = "#ff4000";
 const BG = "#111111";
 const CARD_BG = "#1C1C1C";
 const TEXT = "#F0EDE8";
@@ -473,9 +485,10 @@ const MUTED = "#888";
 const BORDER = "#2A2A2A";
 
 const styles = StyleSheet.create({
+  bgImage: { flex: 1 },
   safe: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: "transparent",
   },
   scroll: {
     flex: 1,
@@ -483,48 +496,73 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 40,
+    paddingTop: 12,
   },
-  screenLabel: {
-    color: MUTED,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
-    fontSize: 14,
-    marginTop: 12,
-    marginBottom: 20,
-    letterSpacing: 0.5,
+  navPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(34,34,34,0.92)",
+    borderWidth: 1,
+    borderColor: "#3A3A3A",
+    borderRadius: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 18,
+  },
+  navPillText: {
+    color: "#A8A8A8",
+    fontSize: 12,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1.5,
   },
   avatarWrapper: {
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 14,
   },
   avatar: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: 116,
+    height: 116,
+    borderRadius: 58,
     backgroundColor: "#2E2E2E",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
     borderColor: ORANGE,
+    shadowColor: ORANGE,
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
   avatarInitials: {
     color: TEXT,
-    fontSize: 38,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontSize: 42,
+    fontFamily: "BebasNeue",
+    fontWeight: "700",
     letterSpacing: 2,
   },
   welcome: {
     color: TEXT,
-    fontSize: 30,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontSize: 36,
+    fontFamily: "BebasNeue",
     textAlign: "center",
-    marginBottom: 28,
-    letterSpacing: 0.5,
+    marginBottom: 4,
+    letterSpacing: 1.4,
+  },
+  subWelcome: {
+    color: "#7E7E7E",
+    fontSize: 11,
+    fontFamily: "BebasNeue",
+    textAlign: "center",
+    marginBottom: 20,
+    letterSpacing: 2,
   },
   card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
+    backgroundColor: "rgba(17,17,17,0.88)",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#2F2F2F",
     paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   infoRow: {
     flexDirection: "row",
@@ -534,8 +572,9 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     color: TEXT,
-    fontSize: 16,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontSize: 13,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1.1,
     flex: 1,
   },
   infoLabelAccent: {
@@ -543,8 +582,9 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     color: TEXT,
-    fontSize: 16,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontSize: 14,
+    fontFamily: "BebasNeue",
+    letterSpacing: 0.7,
     textAlign: "right",
     flex: 1,
   },
@@ -564,17 +604,23 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     backgroundColor: ORANGE,
-    borderRadius: 14,
+    borderRadius: 18,
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 16,
     marginBottom: 8,
+    shadowColor: ORANGE,
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
   editBtnText: {
     color: TEXT,
-    fontSize: 18,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontFamily: "BebasNeue",
+    fontWeight: "700",
+    letterSpacing: 2.2,
   },
   // Added Logout Styles
   logoutBtn: {
@@ -584,9 +630,10 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: MUTED,
-    fontSize: 14,
+    fontSize: 13,
     textDecorationLine: 'underline',
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontFamily: "BebasNeue",
+    letterSpacing: 1.2,
   },
   loadingWrap: {
     flex: 1,
@@ -596,7 +643,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: MUTED,
     fontSize: 16,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontFamily: "BebasNeue",
   },
   // ── Modal Styles (No changes below) ──
   modalOverlay: {
@@ -621,7 +668,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: TEXT,
     fontSize: 22,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontFamily: "BebasNeue",
   },
   modalClose: {
     color: MUTED,
@@ -631,7 +678,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: ORANGE,
     fontSize: 15,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontFamily: "BebasNeue",
     marginTop: 20,
     marginBottom: 10,
     letterSpacing: 0.4,
@@ -644,7 +691,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 6,
     letterSpacing: 0.6,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontFamily: "BebasNeue",
   },
   textInput: {
     backgroundColor: "#252525",
@@ -653,7 +700,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: TEXT,
     fontSize: 15,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontFamily: "BebasNeue",
     borderWidth: 1,
     borderColor: BORDER,
   },
@@ -685,7 +732,7 @@ const styles = StyleSheet.create({
   addContactText: {
     color: ORANGE,
     fontSize: 15,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontFamily: "BebasNeue",
   },
   saveBtn: {
     backgroundColor: ORANGE,
@@ -696,6 +743,6 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: TEXT,
     fontSize: 18,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontFamily: "BebasNeue",
   },
 });

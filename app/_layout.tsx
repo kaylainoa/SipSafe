@@ -15,6 +15,7 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 
 import DrinkTrackerFAB from "@/components/DrinkTrackerFAB";
+import { DrinkProvider } from "@/contexts/DrinkContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 // Hold the splash screen until fonts are ready
@@ -47,16 +48,18 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <DrinkTrackerFAB>
-        <Stack>
+      <DrinkProvider>
+        <DrinkTrackerFAB>
+          <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="modal"
             options={{ presentation: "modal", title: "Modal" }}
           />
           <Stack.Screen name="register" options={{ headerShown: false }} />
-        </Stack>
-      </DrinkTrackerFAB>
+          </Stack>
+        </DrinkTrackerFAB>
+      </DrinkProvider>
       <StatusBar style="auto" />
     </ThemeProvider>
   );

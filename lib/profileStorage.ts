@@ -76,7 +76,27 @@ export async function saveProfileData(profile: ProfileData): Promise<void> {
   await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
 }
 
+const AUTH_USER_KEY = "user";
+
 export async function getEmergencyContactsFromStorage(): Promise<EmergencyContact[]> {
+  try {
+    const raw = await AsyncStorage.getItem(AUTH_USER_KEY);
+    if (raw) {
+      const user = JSON.parse(raw);
+      const contacts = user?.profile?.emergencyContacts;
+      if (Array.isArray(contacts) && contacts.length > 0) {
+        return contacts
+          .map((c: { label?: string; phone?: string }) => ({
+            label: typeof c?.label === "string" ? c.label : "",
+            phone: typeof c?.phone === "string" ? c.phone : "",
+            carrier: "",
+          }))
+          .filter((c) => c.label.trim().length > 0 && c.phone.trim().length > 0);
+      }
+    }
+  } catch {
+    // fall through to legacy storage
+  }
   const profile = await loadProfileData();
   return profile.emergencyContacts.filter(
     (c) => c.label.trim().length > 0 && c.phone.trim().length > 0
