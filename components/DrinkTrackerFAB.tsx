@@ -32,6 +32,7 @@
  * ────────────────────────────────────────────────────────────────────────────
  */
 
+import { DrinkEntry, useDrinkContext } from "@/contexts/DrinkContext";
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
 import { speakText } from "@/lib/elevenlabsTTS";
 import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
@@ -106,16 +107,6 @@ const CATEGORY_EMOJI: Record<string, string> = {
 };
 
 // ─── Types & BAC logic ────────────────────────────────────────────────────────
-interface DrinkEntry {
-  id: string;
-  type: string;
-  emoji: string;
-  standardDrinks: number;
-  bacAtLog: number;
-  timestamp: Date;
-}
-
-const WIDMARK_R = { male: 0.73, female: 0.66 };
 const BAC_SAFE = 0.06;
 const BAC_CAUTION = 0.1;
 const BAC_DANGER = 0.15;
@@ -124,19 +115,6 @@ const DEFAULT_WEIGHT_LBS = 130;
 const DEFAULT_GENDER: "male" | "female" = "female";
 
 type BACProfile = { weightLbs: number; gender: "male" | "female" };
-
-function calcBAC(drinks: DrinkEntry[], profile: BACProfile): number {
-  if (!drinks.length) return 0;
-  const wKg = profile.weightLbs * 0.453592;
-  const r = WIDMARK_R[profile.gender];
-  let bac = 0;
-  for (const d of drinks) {
-    const hrs = (Date.now() - d.timestamp.getTime()) / 3_600_000;
-    const peak = ((d.standardDrinks * 14) / (wKg * 1000 * r)) * 100;
-    bac += peak - Math.min(peak, hrs * 0.015);
-  }
-  return Math.max(0, bac);
-}
 
 function labelToCategory(label: string): string {
   const l = label.toUpperCase();
@@ -208,17 +186,18 @@ function getBACStatus(bac: number) {
 // ─── Sub-Components ──────────────────────────────────────────────────────────
 
 const BACGauge = ({ bac }: { bac: number }) => {
-  const status = getBACStatus(bac);
+  const b = bac ?? 0;
+  const status = getBACStatus(b);
   const trackW = SW - 64;
-  const fillPct = Math.min(bac / 0.2, 1);
+  const fillPct = Math.min(b / 0.2, 1);
 
   return (
-    <View style={[ gS.wrap, bac >= BAC_DANGER && { borderColor: C.red, borderWidth: 2 } ]}>
+    <View style={[ gS.wrap, b >= BAC_DANGER && { borderColor: C.red, borderWidth: 2 } ]}>
       <View style={gS.topRow}>
         <View>
           <Text style={gS.bacLabel}>BLOOD ALCOHOL CONTENT</Text>
           <Text style={[gS.bacNum, { color: status.color }]}>
-            {bac.toFixed(3)}
+            {(bac ?? 0).toFixed(3)}
             <Text style={gS.bacPct}>%</Text>
           </Text>
         </View>
@@ -354,14 +333,12 @@ const dvS = StyleSheet.create({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function DrinkTrackerFAB({ children }: { children: React.ReactNode }) {
+  const { drinks, bac, addDrink: contextAddDrink, removeDrink: contextRemoveDrink, clearDrinks } = useDrinkContext();
   const [open, setOpen] = useState(false);
-  const [drinks, setDrinks] = useState<DrinkEntry[]>([]);
   const [drinkOptionsFromApi, setDrinkOptionsFromApi] = useState<DrinkOption[]>([]);
-  const [bac, setBac] = useState(0);
   const [verifying, setVerifying] = useState(false);
   const [waterNudge, setWaterNudge] = useState(false);
-  const [sessionStart]              = useState(new Date());
-  const [tick, setTick]             = useState(0);
+  const [sessionStart] = useState(new Date());
   const [bacProfile, setBacProfile] = useState<BACProfile>({ weightLbs: DEFAULT_WEIGHT_LBS, gender: DEFAULT_GENDER });
   const [autoAlertSent, setAutoAlertSent] = useState(false);
   const [drinkSearchQuery, setDrinkSearchQuery] = useState("");
@@ -418,13 +395,6 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    const t = setInterval(() => setTick((n) => n + 1), 60_000);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => { setBac(calcBAC(drinks, bacProfile)); }, [drinks, tick, bacProfile]);
-
-  useEffect(() => {
     if (bac >= BAC_DANGER) {
       Animated.loop(
         Animated.sequence([
@@ -465,30 +435,22 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     return () => { cancelled = true; };
   }, []);
 
-  const removeDrink = useCallback((id: string) => { setDrinks((prev) => prev.filter((d) => d.id !== id)); }, []);
+  const removeDrink = useCallback((id: string) => contextRemoveDrink(id), [contextRemoveDrink]);
 
-  const addDrink = useCallback((dt: DrinkOption) => {
-    setDrinks((prev) => {
-      const timestamp = new Date();
-      const draftEntry = {
-        id: Date.now().toString(),
-        type: dt.label,
-        emoji: dt.emoji,
-        standardDrinks: dt.standardDrinks,
-        timestamp,
-      };
-      const bacAtLog = calcBAC([draftEntry as DrinkEntry, ...prev], bacProfile);
-      const entry: DrinkEntry = { ...draftEntry, bacAtLog };
-      const next = [entry, ...prev];
-      if (next.length % 3 === 0) setWaterNudge(true);
-      return next;
-    });
-    (async () => {
-      try {
-        await api.logDrink({ drinkId: dt.id, drinkName: dt.label, category: labelToCategory(dt.label), abv: dt.abv, volumeMl: volumeMlFromStandardDrinks(dt.standardDrinks, dt.abv) });
-      } catch {}
-    })();
-  }, [bacProfile]);
+  const addDrink = useCallback(async (dt: DrinkOption) => {
+    const entry: DrinkEntry = {
+      id: Date.now().toString(),
+      type: dt.label,
+      emoji: dt.emoji,
+      standardDrinks: dt.standardDrinks,
+      timestamp: new Date(),
+    };
+    try {
+      await api.logDrink({ drinkId: dt.id, drinkName: dt.label, category: labelToCategory(dt.label), abv: dt.abv, volumeMl: volumeMlFromStandardDrinks(dt.standardDrinks, dt.abv) });
+      contextAddDrink(entry);
+      if ((drinks.length + 1) % 3 === 0) setWaterNudge(true);
+    } catch {}
+  }, [bacProfile, contextAddDrink, drinks.length]);
 
   const verifyAndAddDrink = useCallback(async (dt: DrinkOption) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -562,7 +524,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         text: "RESET",
         style: "destructive",
         onPress: () => {
-          setDrinks([]);
+          clearDrinks();
           setWaterNudge(false);
           setAutoAlertSent(false);
           setOpen(false);
@@ -585,7 +547,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     } catch {
       // Keep fallback location text.
     }
-    const alertMessage = `SipSafe alert: I may need help. BAC: ${bac.toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`;
+    const alertMessage = `SipSafe alert: I may need help. BAC: ${(bac ?? 0).toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`;
     try {
       type Contact = { label: string; phone: string };
       let contacts: Contact[] = [];
@@ -700,7 +662,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         >
           {drinks.length > 0 && (
             <View style={fabS.badge}>
-              <Text style={[fabS.badgeTxt, { color: isDanger ? C.red : C.redDark }]}>{bac.toFixed(2)}</Text>
+              <Text style={[fabS.badgeTxt, { color: isDanger ? C.red : C.redDark }]}>{(bac ?? 0).toFixed(2)}</Text>
             </View>
           )}
           <Text style={fabS.label}>TRACK</Text>
@@ -729,7 +691,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
           </View>
           <View style={shS.ticker}>
             <Text style={shS.tickerTxt} numberOfLines={1}>
-              DRINKS: {drinks.length} ·· STD: {bac.toFixed(3)}% ·· SOBER IN: {fmtSober(bac)}
+              DRINKS: {drinks.length} ·· STD: {(bac ?? 0).toFixed(3)}% ·· SOBER IN: {fmtSober(bac ?? 0)}
             </Text>
           </View>
           <ScrollView style={shS.scroll} contentContainerStyle={shS.content} keyboardShouldPersistTaps="handled">
@@ -761,7 +723,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
                 drinks.map((drink) => (
                   <View key={drink.id} style={shS.logRow}>
                     <Text style={shS.logDrink}>{drink.emoji} {drink.type}</Text>
-                    <Text style={shS.logBac}>BAC {drink.bacAtLog.toFixed(3)}%</Text>
+                    <Text style={shS.logBac}>{drink.standardDrinks.toFixed(1)} STD</Text>
                   </View>
                 ))
               )}
