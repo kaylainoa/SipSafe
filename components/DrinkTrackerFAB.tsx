@@ -47,7 +47,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { api } from "@/constants/api";
 
 const { width: SW } = Dimensions.get("window");
@@ -285,7 +284,6 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   const [waterNudge, setWaterNudge] = useState(false);
   const [sessionStart]              = useState(new Date());
   const [tick, setTick]             = useState(0);
-  const [verifying, setVerifying]   = useState(false);
 
   const pulse  = useRef(new Animated.Value(1)).current;
   const slideY = useRef(new Animated.Value(800)).current;
@@ -463,15 +461,20 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
       setVerifying(false);
     }
   }, [addDrink, verifying]);
-    Alert.alert(
-      "Verify your drink?",
-      "Take a photo to check for signs of tampering or spoofing. If concerns are found, the drink will not be logged.",
-      [
-        { text: "Skip", style: "cancel" },
-        { text: "Take photo", onPress: () => promptVerifyDrink(entry.id) },
-      ]
-    );
-  }, [promptVerifyDrink]);
+
+  const showVerifyDrinkPrompt = useCallback(
+    (entry: { id: string }) => {
+      Alert.alert(
+        "Verify your drink?",
+        "Take a photo to check for signs of tampering or spoofing. If concerns are found, the drink will not be logged.",
+        [
+          { text: "Skip", style: "cancel" },
+          { text: "Take photo", onPress: () => promptVerifyDrink(entry.id) },
+        ]
+      );
+    },
+    [promptVerifyDrink]
+  );
 
   const endSession = () =>
     Alert.alert("END SESSION", "Clear all drinks and reset BAC?", [
