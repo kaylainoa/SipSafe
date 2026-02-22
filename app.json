@@ -4,7 +4,7 @@
       "slug": "SipSafe",
       "version": "1.0.0",
       "orientation": "portrait",
-      "icon": "./assets/images/logo-sipsafe.png",
+      "icon": "./assets/images/logo-sipsafe-receipt.png",
       "scheme": "sipsafe",
       "userInterfaceStyle": "automatic",
       "newArchEnabled": true,
