@@ -58,7 +58,6 @@ import {
     TextInput,
  
 } from "react-native";
-import { api } from "@/constants/api";
 
 const { width: SW } = Dimensions.get("window");
 
@@ -69,9 +68,9 @@ const C = {
   surface: "#161210",
   surfaceAlt: "#1E1A17",
   border: "#2C2520",
-  red: "#C8321A",
+  red: "#ff4000",
   redDark: "#7A1E0E",
-  orange: "#D4622A",
+  orange: "#ff4000",
   orangeLight: "#FF8C42", // Added for rim-light effect
   safe: "#2E7D4F",
   caution: "#B8860B",
@@ -363,8 +362,17 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   const [waterNudge, setWaterNudge] = useState(false);
   const [sessionStart]              = useState(new Date());
   const [tick, setTick]             = useState(0);
+  const [bacProfile, setBacProfile] = useState<BACProfile>({ weightLbs: DEFAULT_WEIGHT_LBS, gender: DEFAULT_GENDER });
+  const [autoAlertSent, setAutoAlertSent] = useState(false);
+  const [drinkSearchQuery, setDrinkSearchQuery] = useState("");
+
+  const drinkOptions: DrinkOption[] = [...DRINK_TYPES, ...drinkOptionsFromApi];
+  const filteredDrinkOptions = drinkSearchQuery.trim()
+    ? drinkOptions.filter((d) => d.label.toLowerCase().includes(drinkSearchQuery.trim().toLowerCase()))
+    : drinkOptions;
 
   const pulse  = useRef(new Animated.Value(1)).current;
+  const pressAnim = useRef(new Animated.Value(1)).current;
   const slideY = useRef(new Animated.Value(800)).current;
   const dragY = useRef(new Animated.Value(0)).current;
 
@@ -496,6 +504,33 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
       Alert.alert("Verification error", "Could not verify drink.");
     } finally { setVerifying(false); }
   }, [addDrink, verifying]);
+
+  const promptVerifyDrink = useCallback(
+    async (drinkIdToRevoke?: string) => {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Camera access needed", "Allow camera access to verify your drink for tampering.");
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], allowsEditing: false, quality: 0.8, base64: true });
+      if (result.canceled || !result.assets[0]?.base64) return;
+      setVerifying(true);
+      try {
+        const analysis = await analyzeDrinkForSpoofing(
+          result.assets[0].base64,
+          (result.assets[0].mimeType as "image/jpeg" | "image/png") ?? "image/jpeg"
+        );
+        if (!analysis.safe && drinkIdToRevoke) removeDrink(drinkIdToRevoke);
+        Alert.alert(
+          analysis.safe ? "Drink looks OK" : "Possible concerns",
+          analysis.summary + (analysis.concerns?.length ? "\n\n" + analysis.concerns.join("\n") : "")
+        );
+      } finally {
+        setVerifying(false);
+      }
+    },
+    [removeDrink]
+  );
 
   const showVerifyDrinkPrompt = useCallback(
     (entry: { id: string }) => {
@@ -679,7 +714,7 @@ const fabS = StyleSheet.create({
     justifyContent: "center",
     
     // GLOW EFFECT: Shadow remains punchy to define the square shape
-    shadowColor: "#D4622A",
+    shadowColor: "#ff4000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.9,
     shadowRadius: 16,
@@ -702,7 +737,7 @@ const fabS = StyleSheet.create({
     paddingHorizontal: 6, 
     paddingVertical: 3, 
     borderWidth: 1.5, 
-    borderColor: "#D4622A", 
+    borderColor: "#ff4000", 
     zIndex: 1 
   },
   badgeTxt: { 
@@ -715,8 +750,8 @@ const fabS = StyleSheet.create({
 const shS = StyleSheet.create({
   overlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.72)" },
   verifyingOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 1000, alignItems: "center", justifyContent: "center" },
-  verifyingTxt: { color: "#D4622A", fontSize: 11, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
-  sheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#0E0B09", borderTopLeftRadius: 4, borderTopRightRadius: 4, borderTopWidth: 2, borderTopColor: "#C8321A", maxHeight: "90%" },
+  verifyingTxt: { color: "#ff4000", fontSize: 11, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
+  sheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#0E0B09", borderTopLeftRadius: 4, borderTopRightRadius: 4, borderTopWidth: 2, borderTopColor: "#ff4000", maxHeight: "90%" },
   handleRow: { alignItems: "center", paddingTop: 10, paddingBottom: 2 },
   handle: { width: 36, height: 3, backgroundColor: "#2C2520", borderRadius: 2 },
   handleHint: { color: "#2C2520", fontSize: 8, fontFamily: MONO, letterSpacing: 2 },
@@ -726,7 +761,7 @@ const shS = StyleSheet.create({
   titleSub: { color: "#6B5E52", fontSize: 13, fontWeight: "400" },
   endBtn: { borderWidth: 1.5, borderColor: "#2C2520", borderRadius: 2, paddingHorizontal: 14, paddingVertical: 8 },
   endBtnTxt: { color: "#6B5E52", fontSize: 10, fontFamily: MONO, fontWeight: "900" },
-  ticker: { backgroundColor: "#C8321A", paddingVertical: 5, paddingHorizontal: 14 },
+  ticker: { backgroundColor: "#ff4000", paddingVertical: 5, paddingHorizontal: 14 },
   tickerTxt: { color: "#F0EBE1", fontSize: 9, fontFamily: MONO, fontWeight: "700" },
   scroll: { flex: 1 },
   content: { padding: 14 },
@@ -736,7 +771,7 @@ const shS = StyleSheet.create({
   drinkBtn: { width: (SW - 52) / 3, backgroundColor: "#161210", borderRadius: 2, borderWidth: 1, borderColor: "#2C2520", alignItems: "center", paddingVertical: 14 },
   drinkEmoji: { fontSize: 24, marginBottom: 5 },
   drinkName: { color: "#F0EBE1", fontSize: 9, fontFamily: MONO, fontWeight: "900", textAlign: "center" },
-  alertBtn: { backgroundColor: "#161210", borderWidth: 1.5, borderColor: "#D4622A", borderRadius: 2, paddingVertical: 15, alignItems: "center" },
-  alertBtnTxt: { color: "#D4622A", fontSize: 12, fontFamily: MONO, fontWeight: "900", letterSpacing: 2.5 },
+  alertBtn: { backgroundColor: "#161210", borderWidth: 1.5, borderColor: "#ff4000", borderRadius: 2, paddingVertical: 15, alignItems: "center" },
+  alertBtnTxt: { color: "#ff4000", fontSize: 12, fontFamily: MONO, fontWeight: "900", letterSpacing: 2.5 },
   disclaimer: { color: "#2C2520", fontSize: 8, fontFamily: MONO, textAlign: "center", marginTop: 20 },
 });

@@ -145,7 +145,7 @@ export default function LoginPage() {
 
 const BG = "#111111";
 const INPUT_BG = "#242424";
-const ORANGE = "#e8541a";
+const ORANGE = "#ff4000";
 const SERIF = "InstrumentSerif-Regular";
 const SANS = Platform.select({ ios: "System", android: "sans-serif" });
 

@@ -231,8 +231,8 @@ const styles = StyleSheet.create({
 
   bacContainer: { alignItems: 'center', marginBottom: 25 },
   progressBarBackground: { width: '100%', height: 12, backgroundColor: '#222', borderRadius: 6, overflow: 'hidden', marginBottom: 10 },
-  progressBarFill: { height: '100%', backgroundColor: '#f58a4e' },
-  bacValue: { color: '#fff', fontSize: 65, fontFamily: 'BebasNeue', letterSpacing: -2, lineHeight: 80, textShadowColor: 'rgba(212,98,42,0.9)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 20 },
+  progressBarFill: { height: '100%', backgroundColor: '#ff4000' },
+  bacValue: { color: '#fff', fontSize: 65, fontFamily: 'BebasNeue', letterSpacing: -2, lineHeight: 80, textShadowColor: 'rgba(255,64,0,0.9)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 20 },
   bacLabel: { color: '#fff', fontSize: 22, fontFamily: 'BebasNeue', marginTop: -10, opacity: 0.8, letterSpacing: 6 },
 
   actionButtonsWrapper: { marginTop: 0 },
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   chartCard: { backgroundColor: 'rgba(17,17,17,0.85)', borderRadius: 25, padding: 20, marginBottom: 15 },
   chartContainer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 80, paddingHorizontal: 5 },
   chartColumn: { alignItems: 'center', flex: 1 },
-  bar: { width: 14, backgroundColor: '#D4622A', borderRadius: 2 },
+  bar: { width: 14, backgroundColor: '#ff4000', borderRadius: 2 },
 
   receiptButton: {
     backgroundColor: 'rgba(17,17,17,0.85)',
@@ -257,19 +257,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  receiptButtonText: { color: '#D4622A', fontSize: 22, fontFamily: 'BebasNeue', letterSpacing: 1 },
-  receiptButtonArrow: { color: '#D4622A', fontSize: 24 },
+  receiptButtonText: { color: '#ff4000', fontSize: 22, fontFamily: 'BebasNeue', letterSpacing: 1 },
+  receiptButtonArrow: { color: '#ff4000', fontSize: 24 },
 
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   featureCard: { backgroundColor: 'rgba(17,17,17,0.85)', width: '48%', padding: 15, borderRadius: 20, marginBottom: 15 },
   featureTitle: { color: '#fff', fontFamily: 'BebasNeue', fontSize: 18, marginTop: 5, letterSpacing: 1 },
   featureDesc: { color: '#555', fontSize: 14, marginTop: 2, fontFamily: 'BebasNeue', letterSpacing: 0.5 },
 
-  fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: '#C8321A', paddingVertical: 10, paddingHorizontal: 15, borderRadius: 15, alignItems: 'center', elevation: 5 },
+  fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: '#ff4000', paddingVertical: 10, paddingHorizontal: 15, borderRadius: 15, alignItems: 'center', elevation: 5 },
   fabText: { color: '#fff', fontSize: 10, fontFamily: 'BebasNeue' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)' },
-  modalSheet: { position: 'absolute', bottom: 0, width: '100%', backgroundColor: '#0E0B09', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, borderTopWidth: 2, borderTopColor: '#C8321A' },
+  modalSheet: { position: 'absolute', bottom: 0, width: '100%', backgroundColor: '#0E0B09', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, borderTopWidth: 2, borderTopColor: '#ff4000' },
   modalTitle: { color: '#fff', fontFamily: 'BebasNeue', fontSize: 24, marginBottom: 20, textAlign: 'center', letterSpacing: 1 },
   drinkGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   drinkBtn: { width: '31%', backgroundColor: '#161210', padding: 15, borderRadius: 12, alignItems: 'center', marginBottom: 15, borderWidth: 1, borderColor: '#222' },

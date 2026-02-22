@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  ImageBackground,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -140,7 +141,7 @@ const EditModal = ({
         placeholder={placeholder ?? label}
         placeholderTextColor="#555"
         keyboardType={keyboardType ?? "default"}
-        selectionColor="#D4622A"
+        selectionColor="#ff4000"
       />
     </View>
   );
@@ -179,7 +180,7 @@ const EditModal = ({
                       onChangeText={(v) => updateContact(i, "label", v)}
                       placeholder="Label (e.g. Mom)"
                       placeholderTextColor="#555"
-                      selectionColor="#D4622A"
+                      selectionColor="#ff4000"
                     />
                     <TouchableOpacity onPress={() => removeContact(i)} style={styles.removeBtn}>
                       <Text style={styles.removeBtnText}>✕</Text>
@@ -192,7 +193,7 @@ const EditModal = ({
                     placeholder="Phone number"
                     placeholderTextColor="#555"
                     keyboardType="phone-pad"
-                    selectionColor="#D4622A"
+                    selectionColor="#ff4000"
                   />
                 </View>
               ))}
@@ -376,20 +377,31 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="light-content" backgroundColor="#111" />
-        <View style={styles.loadingWrap}>
-          <Text style={styles.loadingText}>Loading profile…</Text>
-        </View>
-      </SafeAreaView>
+      <ImageBackground
+        source={require("@/assets/images/background.png")}
+        style={styles.bgImage}
+        resizeMode="cover"
+      >
+        <SafeAreaView style={styles.safe}>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" />
+          <View style={styles.loadingWrap}>
+            <Text style={styles.loadingText}>Loading profile…</Text>
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#111" />
+    <ImageBackground
+      source={require("@/assets/images/background.png")}
+      style={styles.bgImage}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" />
 
-      <ScrollView
+        <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -450,22 +462,23 @@ export default function ProfileScreen() {
             <Text style={styles.logoutText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+        </ScrollView>
 
-      <EditModal
-        visible={modalVisible}
-        profile={profile}
-        onSave={handleSaveProfile}
-        onClose={() => setModalVisible(false)}
-        saving={saving}
-      />
-    </SafeAreaView>
+        <EditModal
+          visible={modalVisible}
+          profile={profile}
+          onSave={handleSaveProfile}
+          onClose={() => setModalVisible(false)}
+          saving={saving}
+        />
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const ORANGE = "#D4622A";
+const ORANGE = "#ff4000";
 const BG = "#111111";
 const CARD_BG = "#1C1C1C";
 const TEXT = "#F0EDE8";
@@ -473,9 +486,10 @@ const MUTED = "#888";
 const BORDER = "#2A2A2A";
 
 const styles = StyleSheet.create({
+  bgImage: { flex: 1 },
   safe: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: "transparent",
   },
   scroll: {
     flex: 1,
