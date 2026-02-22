@@ -1,3 +1,5 @@
+import { useRouter } from "expo-router"; // 1. Import router
+import React, { useEffect, useState } from "react";
 import { api } from "@/constants/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -16,24 +18,26 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  DEFAULT_PROFILE,
+  type EmergencyContact,
+  type ProfileData,
+  loadProfileData,
+  saveProfileData,
+} from "@/lib/profileStorage";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface EmergencyContact {
-  label: string;
-  phone: string;
-}
-
-interface ProfileData {
-  name: string;
-  email: string;
-  dob: string;
-  weight: string;
-  cell: string;
-  address: string;
-  bloodType: string;
-  emergencyContacts: EmergencyContact[];
-}
+const CARRIER_OPTIONS = [
+  { label: "AT&T", value: "att" },
+  { label: "Verizon", value: "verizon" },
+  { label: "T-Mobile", value: "tmobile" },
+  { label: "Sprint", value: "sprint" },
+  { label: "Boost", value: "boost" },
+  { label: "Cricket", value: "cricket" },
+  { label: "US Cellular", value: "uscellular" },
+  { label: "MetroPCS", value: "metropcs" },
+  { label: "Virgin", value: "virgin" },
+  { label: "Visible", value: "visible" },
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -103,7 +107,7 @@ const EditModal = ({
     }
     setDraft((prev) => ({
       ...prev,
-      emergencyContacts: [...prev.emergencyContacts, { label: "", phone: "" }],
+      emergencyContacts: [...prev.emergencyContacts, { label: "", phone: "", carrier: "" }],
     }));
   };
 
@@ -194,6 +198,29 @@ const EditModal = ({
                     keyboardType="phone-pad"
                     selectionColor="#D4622A"
                   />
+                  <Text style={styles.carrierLabel}>Carrier</Text>
+                  <View style={styles.carrierGrid}>
+                    {CARRIER_OPTIONS.map((carrier) => {
+                      const selected = contact.carrier === carrier.value;
+                      return (
+                        <TouchableOpacity
+                          key={`${i}-${carrier.value}`}
+                          style={[styles.carrierChip, selected && styles.carrierChipSelected]}
+                          onPress={() => updateContact(i, "carrier", carrier.value)}
+                          activeOpacity={0.8}
+                        >
+                          <Text
+                            style={[
+                              styles.carrierChipText,
+                              selected && styles.carrierChipTextSelected,
+                            ]}
+                          >
+                            {carrier.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
               ))}
               <TouchableOpacity style={styles.addContactBtn} onPress={addContact}>
@@ -327,6 +354,23 @@ export default function ProfileScreen() {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+    loadProfileData().then((saved) => {
+      if (mounted) setProfile(saved);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleSaveProfile = async (nextProfile: ProfileData) => {
+    setProfile(nextProfile);
+    await saveProfileData(nextProfile);
+  };
+
+  // 3. Logout logic
+  const handleLogout = () => {
+    // This sends the user back to the login page outside the tabs
     loadUser();
   }, [loadUser]);
 
@@ -427,7 +471,7 @@ export default function ProfileScreen() {
             <View style={styles.contactsRight}>
               {profile.emergencyContacts.map((c, i) => (
                 <Text key={i} style={styles.infoValue}>
-                  {c.label} – {c.phone}
+                  {c.label} – {c.phone} ({c.carrier || "carrier?"})
                 </Text>
               ))}
             </View>
@@ -645,6 +689,38 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     letterSpacing: 0.6,
     fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+  },
+  carrierLabel: {
+    color: MUTED,
+    fontSize: 12,
+    marginBottom: 6,
+    letterSpacing: 0.6,
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+  },
+  carrierGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  carrierChip: {
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: "#252525",
+  },
+  carrierChipSelected: {
+    borderColor: ORANGE,
+    backgroundColor: "#2B1A11",
+  },
+  carrierChipText: {
+    color: TEXT,
+    fontSize: 12,
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+  },
+  carrierChipTextSelected: {
+    color: ORANGE,
   },
   textInput: {
     backgroundColor: "#252525",

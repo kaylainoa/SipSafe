@@ -1,23 +1,64 @@
+/**
+ * SipSafe — DrinkTrackerFAB.tsx
+ *
+ * A self-contained floating action button + bottom-sheet modal that sits
+ * ABOVE the navigator so it persists on every screen.
+ *
+ * ── HOW TO USE ──────────────────────────────────────────────────────────────
+ *
+ *   // App.tsx  (or app/_layout.tsx for Expo Router)
+ *   import DrinkTrackerFAB from './components/DrinkTrackerFAB';
+ *
+ *   export default function App() {
+ *     return (
+ *       <DrinkTrackerFAB>
+ *         <NavigationContainer>
+ *           <Tab.Navigator>...</Tab.Navigator>
+ *         </NavigationContainer>
+ *       </DrinkTrackerFAB>
+ *     );
+ *   }
+ *
+ *   // — OR — for Expo Router (app/_layout.tsx):
+ *   export default function RootLayout() {
+ *     return (
+ *       <DrinkTrackerFAB>
+ *         <Stack />
+ *       </DrinkTrackerFAB>
+ *     );
+ *   }
+ *
+ * The FAB floats over EVERY screen. Remove DrinkTrackerScreen from your tabs.
+ * ────────────────────────────────────────────────────────────────────────────
+ */
+
+import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
+import { speakText } from "@/lib/elevenlabsTTS";
+import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
+import { getEmergencyContactsFromStorage } from "@/lib/profileStorage";
 import { api } from "@/constants/api";
 import { speakText } from "@/lib/elevenlabsTTS";
 import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  Modal,
-  PanResponder,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Dimensions,
+    Linking,
+    Modal,
+    PanResponder,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    TextInput,
+ 
 } from "react-native";
 
 const { width: SW } = Dimensions.get("window");
@@ -321,6 +362,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   const [bac, setBac] = useState(0);
   const [verifying, setVerifying] = useState(false);
   const [waterNudge, setWaterNudge] = useState(false);
+  const [autoAlertSent, setAutoAlertSent] = useState(false);
   const [sessionStart] = useState(new Date());
   const [tick, setTick] = useState(0);
   const [drinkSearchQuery, setDrinkSearchQuery] = useState("");
@@ -472,7 +514,148 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
 
   const sendAlert = () => Alert.alert("ALERT SENT", "Emergency contacts notified.");
 
+        await speakText(analysis.voiceMessage);
+
+        if (!analysis.allowed) {
+          const reasons: string[] = [];
+          if (!analysis.isExpectedDrinkMatch) {
+            reasons.push(
+              `Expected ${dt.label}, but photo looked like ${analysis.matchedDrinkType}.`,
+            );
+          }
+          if (analysis.spoofingLikely) {
+            reasons.push("Possible spoofing/tampering indicators detected.");
+          }
+          if (analysis.druggingLikely) {
+            reasons.push(
+              "Possible drink spiking/drugging indicators detected.",
+            );
+          }
+          const details = [...reasons, ...analysis.concerns].join("\n");
+          Alert.alert(
+            "Verification failed",
+            `${analysis.summary}${details ? `\n\n${details}` : ""}\n\nDrink was not added.`,
+            [{ text: "OK" }],
+          );
+          return;
+        }
+
+        addDrink(dt);
+        const extra =
+          analysis.concerns.length > 0
+            ? `\n\nNotes:\n${analysis.concerns.join("\n")}`
+            : "";
+        Alert.alert("Drink verified", `${analysis.summary}${extra}`, [
+          { text: "OK" },
+        ]);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error.";
+        const friendly =
+          message.includes("model") || message.includes("404")
+            ? "Gemini model configuration failed. Try again after setting a valid Gemini model."
+            : "Gemini could not verify this drink right now. Please retake the photo.";
+        await speakText("Verification failed. I could not verify this drink.");
+        Alert.alert(
+          "Verification error",
+          `${friendly}\n\nTechnical detail: ${message}`,
+          [{ text: "OK" }],
+        );
+      } finally {
+        setVerifying(false);
+      }
+    },
+    [addDrink, verifying],
+  );
+  function showVerifyDrinkPrompt(entry: DrinkEntry) {
+    Alert.alert(
+      "Verify your drink?",
+      "Take a photo to check for signs of tampering or spoofing. If concerns are found, the drink will not be logged.",
+      [
+        { text: "Skip", style: "cancel" },
+        { text: "Take photo", onPress: () => promptVerifyDrink(entry.id) },
+      ],
+    );
+  }
+
+  const endSession = () =>
+    Alert.alert("END SESSION", "Clear all drinks and reset BAC?", [
+      { text: "CANCEL", style: "cancel" },
+      {
+        text: "RESET",
+        style: "destructive",
+        onPress: () => {
+          setDrinks([]);
+          setWaterNudge(false);
+          setAutoAlertSent(false);
+          setOpen(false);
+        },
+      },
+    ]);
+
+  const sendAlert = useCallback(async () => {
+    let locationText = "Location unavailable.";
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const lat = position.coords.latitude.toFixed(6);
+        const lng = position.coords.longitude.toFixed(6);
+        locationText = `Coordinates: ${lat}, ${lng}. Map: https://maps.google.com/?q=${lat},${lng}`;
+      }
+    } catch {
+      // Keep fallback location text.
+    }
+    const alertMessage = `SipSafe alert: I may need help. BAC: ${bac.toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`;
+    try {
+      const contacts = await getEmergencyContactsFromStorage();
+      if (contacts.length === 0) {
+        Alert.alert(
+          "No emergency contacts",
+          "Add at least one emergency contact in Profile before sending alerts.",
+          [{ text: "OK" }],
+        );
+        return;
+      }
+      const recipients = contacts
+        .map((c) => c.phone.replace(/[^\d+]/g, ""))
+        .filter((v) => v.length > 0);
+      if (recipients.length === 0) {
+        Alert.alert("No emergency contacts", "Add emergency contact phone numbers in Profile.", [{ text: "OK" }]);
+        return;
+      }
+      const queryPrefix = Platform.OS === "ios" ? "&" : "?";
+      const smsUrl = `sms:${recipients.join(",")}${queryPrefix}body=${encodeURIComponent(alertMessage)}`;
+      const canOpen = await Linking.canOpenURL(smsUrl);
+      if (!canOpen) {
+        Alert.alert("SMS unavailable", "Could not open the Messages app on this device.", [{ text: "OK" }]);
+        return;
+      }
+      await Linking.openURL(smsUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error.";
+      Alert.alert(
+        "Alert failed",
+        message,
+        [{ text: "OK" }],
+      );
+    }
+  }, [bac]);
+
+  const status = getBACStatus(bac);
+  const totalStd = drinks.reduce((s, d) => s + d.standardDrinks, 0);
   const isDanger = bac >= BAC_DANGER;
+
+  useEffect(() => {
+    if (!autoAlertSent && bac >= BAC_DANGER && drinks.length > 0) {
+      setAutoAlertSent(true);
+      void sendAlert();
+    }
+  }, [autoAlertSent, bac, drinks.length, sendAlert]);
+
+  // FAB appearance reacts to session state
   const fabBg = drinks.length === 0 ? C.surface : isDanger ? C.red : C.redDark;
 
   return (
