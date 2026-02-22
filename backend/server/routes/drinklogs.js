@@ -182,4 +182,170 @@ router.get("/stats", jwtAuth, async (req, res) => {
   }
 });
 
+// GET /api/drinklogs/analytics?range=1d|1w|1m|1y|all - bucketed consumption + trends
+router.get("/analytics", jwtAuth, async (req, res) => {
+  try {
+    const range = (req.query.range || "1w").toLowerCase();
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+
+    let startDate;
+    let bucketDays;
+    let bucketLabelFormat;
+    if (range === "1d") {
+      startDate = new Date(startOfToday);
+      startDate.setDate(startDate.getDate() - 1);
+      bucketDays = 1;
+      bucketLabelFormat = "hour";
+    } else if (range === "1w") {
+      startDate = new Date(startOfToday);
+      startDate.setDate(startDate.getDate() - 7);
+      bucketDays = 1;
+      bucketLabelFormat = "day";
+    } else if (range === "1m") {
+      startDate = new Date(startOfToday);
+      startDate.setDate(startDate.getDate() - 30);
+      bucketDays = 1;
+      bucketLabelFormat = "day";
+    } else if (range === "1y") {
+      startDate = new Date(startOfToday);
+      startDate.setFullYear(startDate.getFullYear() - 1);
+      bucketDays = 30;
+      bucketLabelFormat = "month";
+    } else {
+      // all: last 12 months by month
+      startDate = new Date(startOfToday);
+      startDate.setFullYear(startDate.getFullYear() - 1);
+      bucketDays = 30;
+      bucketLabelFormat = "month";
+    }
+
+    const logs = await DrinkLog.find({
+      userId: req.userId,
+      createdAt: { $gte: startDate },
+    })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const buckets = [];
+    const bucketCounts = new Map();
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    if (range === "1d" && bucketLabelFormat === "hour") {
+      for (let h = 0; h < 24; h++) {
+        const key = `${h}`;
+        bucketCounts.set(key, { count: 0, pureAlcoholMl: 0, label: `${h}:00` });
+      }
+      logs.forEach((log) => {
+        const d = new Date(log.createdAt);
+        const key = `${d.getHours()}`;
+        if (bucketCounts.has(key)) {
+          const b = bucketCounts.get(key);
+          b.count += 1;
+          b.pureAlcoholMl += log.pureAlcoholMl || 0;
+        }
+      });
+      for (let h = 0; h < 24; h++) {
+        const v = bucketCounts.get(`${h}`);
+        buckets.push({ label: v.label, date: `${h}`, count: v.count, pureAlcoholMl: v.pureAlcoholMl });
+      }
+    } else if (bucketLabelFormat === "month") {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        bucketCounts.set(monthKey, {
+          count: 0,
+          pureAlcoholMl: 0,
+          label: d.toLocaleString("default", { month: "short", year: "2-digit" }),
+        });
+      }
+      logs.forEach((log) => {
+        const d = new Date(log.createdAt);
+        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        if (bucketCounts.has(monthKey)) {
+          const b = bucketCounts.get(monthKey);
+          b.count += 1;
+          b.pureAlcoholMl += log.pureAlcoholMl || 0;
+        }
+      });
+      const sortedKeys = Array.from(bucketCounts.keys()).sort();
+      sortedKeys.forEach((k) => {
+        const v = bucketCounts.get(k);
+        buckets.push({ label: v.label, date: k, count: v.count, pureAlcoholMl: v.pureAlcoholMl });
+      });
+    } else {
+      const cursor = new Date(startDate);
+      const endDate = new Date(now.getTime() + dayMs);
+      while (cursor < endDate) {
+        const key = cursor.toISOString().slice(0, 10);
+        const label = cursor.toLocaleString("default", { weekday: "short" });
+        bucketCounts.set(key, { count: 0, pureAlcoholMl: 0, label });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      logs.forEach((log) => {
+        const d = new Date(log.createdAt);
+        const key = d.toISOString().slice(0, 10);
+        if (bucketCounts.has(key)) {
+          const b = bucketCounts.get(key);
+          b.count += 1;
+          b.pureAlcoholMl += log.pureAlcoholMl || 0;
+        }
+      });
+      const sortedKeys = Array.from(bucketCounts.keys()).sort();
+      sortedKeys.forEach((k) => {
+        const v = bucketCounts.get(k);
+        buckets.push({ label: v.label, date: k, count: v.count, pureAlcoholMl: v.pureAlcoholMl });
+      });
+    }
+
+    let totalDrinks = 0;
+    let totalPureAlcoholMl = 0;
+    logs.forEach((log) => {
+      totalDrinks += 1;
+      totalPureAlcoholMl += log.pureAlcoholMl || 0;
+    });
+
+    // Previous period for trend
+    const periodMs = now - startDate;
+    const previousStart = new Date(startDate.getTime() - periodMs);
+    const previousLogs = await DrinkLog.find({
+      userId: req.userId,
+      createdAt: { $gte: previousStart, $lt: startDate },
+    }).lean();
+    const previousDrinks = previousLogs.length;
+    const previousPureAlcoholMl = previousLogs.reduce((s, l) => s + (l.pureAlcoholMl || 0), 0);
+
+    let consumptionDirection = "same";
+    if (totalDrinks > previousDrinks) consumptionDirection = "up";
+    else if (totalDrinks < previousDrinks) consumptionDirection = "down";
+
+    // Time between drinks (gaps in hours)
+    const sortedTimes = logs.map((l) => new Date(l.createdAt).getTime()).sort((a, b) => a - b);
+    let avgHoursBetween = 0;
+    let longestGapHours = 0;
+    if (sortedTimes.length >= 2) {
+      const gaps = [];
+      for (let i = 1; i < sortedTimes.length; i++) {
+        gaps.push((sortedTimes[i] - sortedTimes[i - 1]) / (60 * 60 * 1000));
+      }
+      avgHoursBetween = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+      longestGapHours = Math.max(...gaps);
+    }
+
+    res.json({
+      buckets,
+      totals: { totalDrinks, totalPureAlcoholMl },
+      trends: {
+        consumptionDirection,
+        currentPeriodDrinks: totalDrinks,
+        previousPeriodDrinks: previousDrinks,
+        avgHoursBetweenDrinks: Math.round(avgHoursBetween * 10) / 10,
+        longestGapHours: Math.round(longestGapHours * 10) / 10,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

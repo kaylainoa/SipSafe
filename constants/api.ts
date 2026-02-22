@@ -51,8 +51,16 @@ export const api = {
   // Drink logs
   logDrink: (data: any) =>
     request("/api/drinklogs", { method: "POST", body: JSON.stringify(data) }),
-  getLogs: () => request("/api/drinklogs"),
+  getLogs: (params?: { limit?: number; page?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.limit != null) q.set("limit", String(params.limit));
+    if (params?.page != null) q.set("page", String(params.page));
+    const query = q.toString();
+    return request(`/api/drinklogs${query ? `?${query}` : ""}`);
+  },
   getStats: () => request("/api/drinklogs/stats"),
+  getConsumptionAnalytics: (range: string) =>
+    request(`/api/drinklogs/analytics?range=${encodeURIComponent(range)}`),
 
   // Scan
   scanDrink: (imageBase64: string) =>

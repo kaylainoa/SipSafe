@@ -1,7 +1,8 @@
+import { api } from '@/constants/api';
 import { useDrinkContext } from '@/contexts/DrinkContext';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Image,
   ImageBackground,
@@ -19,9 +20,59 @@ import { SpecialElite_400Regular } from '@expo-google-fonts/special-elite';
 
 const THEME_COLOR = '#FF4000';
 
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
 function HomePageContent() {
   const router = useRouter();
   const { bac } = useDrinkContext();
+  const [weeklyCounts, setWeeklyCounts] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+
+  const loadWeekly = useCallback(async () => {
+    try {
+      const res = await api.getConsumptionAnalytics('1w');
+      const buckets = (res as { buckets?: { count: number }[] })?.buckets;
+      if (Array.isArray(buckets) && buckets.length >= 7) {
+        setWeeklyCounts(buckets.slice(0, 7).map((b) => b.count));
+        return;
+      }
+      if (Array.isArray(buckets) && buckets.length > 0) {
+        const counts = [...buckets.map((b) => b.count)];
+        while (counts.length < 7) counts.unshift(0);
+        setWeeklyCounts(counts.slice(0, 7));
+        return;
+      }
+    } catch {
+      // fallback: use getLogs and bucket last 7 days
+    }
+    try {
+      const logs = (await api.getLogs({ limit: 100 })) as { createdAt: string }[];
+      const list = Array.isArray(logs) ? logs : [];
+      const now = new Date();
+      const dayMs = 24 * 60 * 60 * 1000;
+      const counts = [0, 0, 0, 0, 0, 0, 0];
+      for (let i = 0; i < 7; i++) {
+        const dayStart = new Date(now);
+        dayStart.setDate(dayStart.getDate() - (6 - i));
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart.getTime() + dayMs);
+        const n = list.filter((l) => {
+          const t = new Date(l.createdAt).getTime();
+          return t >= dayStart.getTime() && t < dayEnd.getTime();
+        }).length;
+        counts[i] = n;
+      }
+      setWeeklyCounts(counts);
+    } catch {
+      setWeeklyCounts([0, 0, 0, 0, 0, 0, 0]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadWeekly();
+  }, [loadWeekly]);
+
+  const maxWeekly = Math.max(1, ...weeklyCounts);
+  const barHeight = (count: number) => Math.max(2, (count / maxWeekly) * 80);
 
   return (
     <ImageBackground
@@ -70,16 +121,22 @@ function HomePageContent() {
             </View>
           </View>
 
-          <View style={styles.chartCard}>
+          <TouchableOpacity
+            style={styles.chartCard}
+            onPress={() => router.push("/stats")}
+            activeOpacity={0.85}
+          >
             <Text style={styles.cardTitle}>Weekly Consumption</Text>
             <View style={styles.chartContainer}>
-              {[0.4, 0.7, 0.3, 0.8, 0.5, 0.9, 0.2].map((val, i) => (
+              {weeklyCounts.map((count, i) => (
                 <View key={`col-${i}`} style={styles.chartColumn}>
-                  <View style={[styles.bar, { height: val * 80 }]} />
+                  <View style={[styles.bar, { height: barHeight(count) }]} />
+                  <Text style={styles.barDayLabel}>{DAY_LABELS[i]}</Text>
                 </View>
               ))}
             </View>
-          </View>
+            <Text style={styles.chartCardHint}>Tap to view full stats →</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.receiptButton}
@@ -195,6 +252,8 @@ const styles = StyleSheet.create({
   chartContainer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 80, paddingHorizontal: 5 },
   chartColumn: { alignItems: 'center', flex: 1 },
   bar: { width: 14, backgroundColor: THEME_COLOR, borderRadius: 2 },
+  barDayLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 10, marginTop: 4 },
+  chartCardHint: { color: THEME_COLOR, fontSize: 12, marginTop: 10, opacity: 0.9 },
 
   receiptButton: {
     backgroundColor: 'rgba(20,20,20,0.8)',
