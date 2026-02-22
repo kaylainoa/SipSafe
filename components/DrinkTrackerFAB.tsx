@@ -39,6 +39,7 @@ import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
 import { speakText } from "@/lib/elevenlabsTTS";
 import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -94,21 +95,21 @@ type LiquorOption = {
 };
 
 const DRINK_TYPES: DrinkOption[] = [
-  { label: "BEER", emoji: "🍺", standardDrinks: 1.0, abv: 5 },
-  { label: "WINE", emoji: "🍷", standardDrinks: 1.0, abv: 12 },
-  { label: "SHOT", emoji: "🥃", standardDrinks: 1.0, abv: 40 },
-  { label: "COCKTAIL", emoji: "🍹", standardDrinks: 1.5, abv: 15 },
-  { label: "SELTZER", emoji: "🫧", standardDrinks: 0.8, abv: 5 },
-  { label: "CIDER", emoji: "🍎", standardDrinks: 1.0, abv: 5 },
+  { label: "BEER", emoji: "beer", standardDrinks: 1.0, abv: 5 },
+  { label: "WINE", emoji: "glass-wine", standardDrinks: 1.0, abv: 12 },
+  { label: "SHOT", emoji: "glass-cocktail", standardDrinks: 1.0, abv: 40 },
+  { label: "COCKTAIL", emoji: "glass-cocktail", standardDrinks: 1.5, abv: 15 },
+  { label: "SELTZER", emoji: "cup-water", standardDrinks: 0.8, abv: 5 },
+  { label: "CIDER", emoji: "fruit-pear", standardDrinks: 1.0, abv: 5 },
 ];
 
 const CATEGORY_EMOJI: Record<string, string> = {
-  beer: "🍺",
-  wine: "🍷",
-  spirits: "🥃",
-  cocktail: "🍹",
-  cider: "🍎",
-  "non-alcoholic": "🫧",
+  beer: "beer",
+  wine: "glass-wine",
+  spirits: "glass-cocktail",
+  cocktail: "glass-cocktail",
+  cider: "fruit-pear",
+  "non-alcoholic": "cup-water",
 };
 const LIQUOR_OPTIONS: LiquorOption[] = [
   { label: "VODKA", baseAbv: 40 },
@@ -304,26 +305,24 @@ const stS = StyleSheet.create({
 const DangerBanner = ({ onAlert }: { onAlert: () => void }) => (
   <TouchableOpacity onPress={onAlert} activeOpacity={0.8}>
     <View style={bnS.wrap}>
-      <Text style={bnS.skull}>☠</Text>
+      <MaterialCommunityIcons name="alert-octagon-outline" size={24} color={C.paper} />
       <View style={{ flex: 1 }}>
         <Text style={bnS.title}>DANGER LEVEL REACHED</Text>
         <Text style={bnS.sub}>TAP TO ALERT EMERGENCY CONTACTS</Text>
       </View>
-      <Text style={bnS.arrow}>›</Text>
+      <MaterialCommunityIcons name="chevron-right" size={22} color={C.paper} />
     </View>
   </TouchableOpacity>
 );
 const bnS = StyleSheet.create({
   wrap: { flexDirection: "row", alignItems: "center", backgroundColor: C.redDark, borderRadius: 2, padding: 14, marginBottom: 12, gap: 12, borderWidth: 1.5, borderColor: C.red, borderStyle: "dashed" },
-  skull: { fontSize: 26, color: C.paper },
   title: { color: C.paper, fontSize: 15, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
   sub: { color: "#FFB3B3", fontSize: 12, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
-  arrow: { color: C.paper, fontSize: 22 },
 });
 
 const WaterNudge = ({ onDismiss }: { onDismiss: () => void }) => (
   <View style={wS.wrap}>
-    <Text style={wS.icon}>💧</Text>
+    <MaterialCommunityIcons name="water-outline" size={16} color="#7EB8D8" />
     <Text style={wS.text}>WATER BREAK — hydration helps your body process alcohol.</Text>
     <TouchableOpacity onPress={onDismiss}>
       <Text style={wS.ok}>OK</Text>
@@ -332,7 +331,6 @@ const WaterNudge = ({ onDismiss }: { onDismiss: () => void }) => (
 );
 const wS = StyleSheet.create({
   wrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#0A1520", borderWidth: 1, borderColor: "#2A4A6A", borderStyle: "dashed", borderRadius: 2, padding: 12, marginBottom: 12, gap: 10 },
-  icon: { fontSize: 16 },
   text: { flex: 1, color: "#7EB8D8", fontSize: 12, fontFamily: MONO, letterSpacing: 1, lineHeight: 17 },
   ok: { color: "#7EB8D8", fontSize: 13, fontFamily: MONO, fontWeight: "900", letterSpacing: 2, paddingLeft: 6 },
 });
@@ -342,7 +340,7 @@ const DrinkLogItem = ({ entry, onRemove }: { entry: DrinkEntry; onRemove: () => 
   const ago = min < 1 ? "JUST NOW" : min < 60 ? `${min}M AGO` : `${Math.floor(min / 60)}H AGO`;
   return (
     <View style={liS.row}>
-      <Text style={liS.emoji}>{entry.emoji}</Text>
+      <MaterialCommunityIcons name={(entry.emoji as any) || "glass-cocktail"} size={20} color={C.text} />
       <View style={liS.info}>
         <Text style={liS.name}>{entry.type}</Text>
         <Text style={liS.time}>{ago} · Alcohol amount: {entry.standardDrinks.toFixed(1)} drinks</Text>
@@ -355,7 +353,6 @@ const DrinkLogItem = ({ entry, onRemove }: { entry: DrinkEntry; onRemove: () => 
 };
 const liS = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", paddingVertical: 11, paddingHorizontal: 12, backgroundColor: C.surfaceAlt, borderRadius: 2, marginBottom: 6, gap: 10, borderLeftWidth: 3, borderLeftColor: C.red },
-  emoji: { fontSize: 20 },
   info: { flex: 1 },
   name: { color: C.text, fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
   time: { color: C.muted, fontSize: 12, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
@@ -480,7 +477,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         const options: DrinkOption[] = list.map((d: any) => ({
           id: d._id,
           label: d.name ?? "Drink",
-          emoji: CATEGORY_EMOJI[String(d.category ?? "").toLowerCase()] ?? "🍹",
+          emoji: CATEGORY_EMOJI[String(d.category ?? "").toLowerCase()] ?? "glass-cocktail",
           standardDrinks: typeof d.standardDrinks === "number" ? d.standardDrinks : 1,
           abv: typeof d.abv === "number" ? d.abv : 5,
         }));
@@ -757,7 +754,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     const estimatedAbv = Number((mixedLiquor.baseAbv * (0.15 + strengthScale * 0.35)).toFixed(1));
     const mixedOption: DrinkOption = {
       label: `MIXED (${mixedLiquor.label})`,
-      emoji: "🍹",
+      emoji: "glass-cocktail",
       standardDrinks: estimatedStd,
       abv: estimatedAbv,
     };
@@ -860,14 +857,17 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
               >
                 {filteredDrinkOptions.map((dt) => (
                   <TouchableOpacity key={dt.id ?? dt.label} style={shS.drinkBtn} onPress={() => verifyAndAddDrink(dt)}>
-                    <Text style={shS.drinkEmoji}>{dt.emoji}</Text>
+                    <MaterialCommunityIcons name={(dt.emoji as any) || "glass-cocktail"} size={24} color="#F0EBE1" style={shS.drinkEmoji} />
                     <Text style={shS.drinkName}>{dt.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
             <TouchableOpacity style={shS.aiDetectBtn} onPress={detectAndAddDrinkWithCamera}>
-              <Text style={shS.aiDetectBtnTxt}>📷 AI CAMERA DETECT DRINK</Text>
+              <View style={shS.inlineBtnRow}>
+                <MaterialCommunityIcons name="camera-outline" size={18} color="#F0EBE1" style={shS.inlineBtnIcon} />
+                <Text style={shS.aiDetectBtnTxt}>AI CAMERA DETECT DRINK</Text>
+              </View>
             </TouchableOpacity>
             {/* Mixed Drink Builder: liquor selection + strength slider + add action */}
             <TouchableOpacity
@@ -875,7 +875,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
               onPress={() => setMixedEditorOpen((v) => !v)}
               activeOpacity={0.85}
             >
-              <Text style={shS.mixedBtnTxt}>🍸 MIXED DRINK BUILDER</Text>
+              <View style={shS.inlineBtnRow}>
+                <MaterialCommunityIcons name="glass-cocktail" size={18} color="#F0EBE1" style={shS.inlineBtnIcon} />
+                <Text style={shS.mixedBtnTxt}>MIXED DRINK BUILDER</Text>
+              </View>
             </TouchableOpacity>
             {mixedEditorOpen && (
               <View style={shS.mixedPanel}>
@@ -923,7 +926,12 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
                 </TouchableOpacity>
               </View>
             )}
-            <TouchableOpacity style={shS.alertBtn} onPress={sendAlert}><Text style={shS.alertBtnTxt}>📍 ALERT MY FRIENDS</Text></TouchableOpacity>
+            <TouchableOpacity style={shS.alertBtn} onPress={sendAlert}>
+              <View style={shS.inlineBtnRow}>
+                <MaterialCommunityIcons name="map-marker-outline" size={18} color="#ff4000" style={shS.inlineBtnIcon} />
+                <Text style={shS.alertBtnTxt}>ALERT MY FRIENDS</Text>
+              </View>
+            </TouchableOpacity>
             <View style={shS.logSection}>
               <Text style={shS.logTitle}>DRINK LOG</Text>
               {drinks.length === 0 ? (
@@ -931,7 +939,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
               ) : (
                 drinks.map((drink) => (
                   <View key={drink.id} style={shS.logRow}>
-                    <Text style={shS.logDrink}>{drink.emoji} {drink.type}</Text>
+                    <View style={shS.logDrinkRow}>
+                      <MaterialCommunityIcons name={(drink.emoji as any) || "glass-cocktail"} size={16} color="#F0EBE1" style={shS.inlineBtnIcon} />
+                      <Text style={shS.logDrink}>{drink.type}</Text>
+                    </View>
                     <Text style={shS.logBac}>Alcohol: {drink.standardDrinks.toFixed(1)} drinks</Text>
                   </View>
                 ))
@@ -1020,7 +1031,7 @@ const shS = StyleSheet.create({
   gridViewport: { maxHeight: 260, marginBottom: 14 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
   drinkBtn: { width: (SW - 52) / 3, backgroundColor: "#161210", borderRadius: 2, borderWidth: 1, borderColor: "#2C2520", alignItems: "center", paddingVertical: 14 },
-  drinkEmoji: { fontSize: 24, marginBottom: 5 },
+  drinkEmoji: { marginBottom: 5 },
   drinkName: { color: "#F0EBE1", fontSize: 12, fontFamily: MONO, fontWeight: "900", textAlign: "center" },
   aiDetectBtn: {
     backgroundColor: "rgba(17,17,17,0.9)",
@@ -1054,6 +1065,8 @@ const shS = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 1.5,
   },
+  inlineBtnRow: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
+  inlineBtnIcon: { marginRight: 8 },
   mixedPanel: {
     backgroundColor: "rgba(17,17,17,0.92)",
     borderWidth: 1,
@@ -1143,6 +1156,7 @@ const shS = StyleSheet.create({
   logTitle: { color: "#F0EBE1", fontSize: 13, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5, marginBottom: 8 },
   logEmpty: { color: "#6B5E52", fontSize: 13, fontFamily: MONO },
   logRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: "#2C2520" },
+  logDrinkRow: { flexDirection: "row", alignItems: "center", flex: 1 },
   logDrink: { color: "#F0EBE1", fontSize: 13, fontFamily: MONO, fontWeight: "700" },
   logBac: { color: "#ff4000", fontSize: 13, fontFamily: MONO, fontWeight: "900" },
   disclaimer: { color: "#2C2520", fontSize: 11, fontFamily: MONO, textAlign: "center", marginTop: 20 },
