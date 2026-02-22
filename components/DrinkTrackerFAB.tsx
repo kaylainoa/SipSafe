@@ -33,31 +33,30 @@
  */
 
 import { AddIcon } from "@/components/AddIcon";
+import { api } from "@/constants/api";
 import { DrinkEntry, useDrinkContext } from "@/contexts/DrinkContext";
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
 import { speakText } from "@/lib/elevenlabsTTS";
 import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
-import { api } from "@/constants/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    Linking,
-    Modal,
-    PanResponder,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    TextInput,
- 
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Linking,
+  Modal,
+  PanResponder,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const { width: SW } = Dimensions.get("window");
@@ -852,7 +851,7 @@ const fabS = StyleSheet.create({
   },
   btn: {
     // CHANGED: Adjusted dimensions to look more like a card
-    width: 90, 
+    width: 80, 
     height: 80,
     // CHANGED: borderRadius 20 matches your dashboard statCard aesthetic
     borderRadius: 20, 
