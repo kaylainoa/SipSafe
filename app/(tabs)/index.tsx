@@ -1,13 +1,10 @@
 import { useDrinkContext } from '@/contexts/DrinkContext';
-import { api } from '@/constants/api';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
-  Animated,
   Image,
   ImageBackground,
-  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -22,24 +19,9 @@ import { SpecialElite_400Regular } from '@expo-google-fonts/special-elite';
 
 const THEME_COLOR = '#FF4000';
 
-const DRINK_TYPES = [
-  { label: "BEER", emoji: "🍺", standardDrinks: 1.0 },
-  { label: "WINE", emoji: "🍷", standardDrinks: 1.0 },
-  { label: "SHOT", emoji: "🥃", standardDrinks: 1.0 },
-  { label: "COCKTAIL", emoji: "🍹", standardDrinks: 1.5 },
-  { label: "SELTZER", emoji: "🫧", standardDrinks: 0.8 },
-  { label: "CIDER", emoji: "🍎", standardDrinks: 1.0 },
-];
-
-const CATEGORY_MAP: Record<string, string> = {
-  BEER: 'beer', WINE: 'wine', SHOT: 'spirits', COCKTAIL: 'cocktail',
-  SELTZER: 'cider', CIDER: 'cider',
-};
-
-function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
+function HomePageContent() {
   const router = useRouter();
   const { bac } = useDrinkContext();
-  const bacPercentage = Math.min(((bac ?? 0) / 0.15) * 100, 100);
 
   return (
     <ImageBackground
@@ -50,12 +32,9 @@ function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
       {/* Dark overlay to make text readable over the photo */}
       <View style={styles.darkOverlay} />
 
-      {/* 1. TOP NAV PILL */}
+      {/* Top nav - Profile only */}
       <View style={styles.nav}>
-        <TouchableOpacity style={styles.inputPill} onPress={onOpenTracker}>
-          <View style={styles.circleIcon} />
-          <Text style={styles.inputPillText}>How much did you drink?</Text>
-        </TouchableOpacity>
+        <View style={styles.navSpacer} />
         <TouchableOpacity onPress={() => router.push("/profile")}>
           <Text style={styles.navBtn}>Profile</Text>
         </TouchableOpacity>
@@ -63,7 +42,7 @@ function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         
-        {/* 2. LOGO OVERLAY - Pushing content down */}
+        {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
             source={require('@/assets/images/logo-sipsafe.png')}
@@ -72,11 +51,8 @@ function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
           />
         </View>
 
-        {/* 3. BAC DISPLAY - Now much lower */}
+        {/* BAC display - no progress bar */}
         <View style={styles.bacContainer}>
-          <View style={styles.progressBarBackground}>
-            <View style={[styles.progressBarFill, { width: `${bacPercentage}%` }]} />
-          </View>
           <Text style={styles.bacValue}>{(bac ?? 0).toFixed(3)}%</Text>
           <Text style={styles.bacLabel}>EST. BAC</Text>
         </View>
@@ -120,65 +96,21 @@ function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
 }
 
 export default function App() {
-  const { addDrink: contextAddDrink } = useDrinkContext();
   const [fontsLoaded] = useFonts({
     BebasNeue: BebasNeue_400Regular,
     SpecialElite: SpecialElite_400Regular,
   });
 
-  const [open, setOpen] = useState(false);
-  const slideY = useRef(new Animated.Value(1000)).current;
-
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded]);
-
-  useEffect(() => {
-    Animated.spring(slideY, { toValue: open ? 0 : 1000, useNativeDriver: true, damping: 25 }).start();
-  }, [open]);
-
-  const addDrink = (dt: (typeof DRINK_TYPES)[number]) => {
-    const entry = {
-      id: Date.now().toString(),
-      type: dt.label,
-      emoji: dt.emoji,
-      standardDrinks: dt.standardDrinks,
-      timestamp: new Date(),
-    };
-    contextAddDrink(entry);
-    setOpen(false);
-    const category = CATEGORY_MAP[dt.label] ?? 'cocktail';
-    const abv = dt.label === 'WINE' ? 12 : dt.label === 'SHOT' ? 40 : dt.label === 'COCKTAIL' ? 15 : 5;
-    const volumeMl = Math.round((dt.standardDrinks * 14 * 100) / (0.789 * abv));
-    api.logDrink({ drinkName: dt.label, category, abv, volumeMl }).catch(() => {});
-  };
 
   if (!fontsLoaded) return null;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
       <StatusBar barStyle="light-content" />
-      <HomePageContent onOpenTracker={() => setOpen(true)} />
-
-      <TouchableOpacity style={styles.fab} onPress={() => setOpen(true)}>
-        <Text style={{ fontSize: 24 }}>🍺</Text>
-        <Text style={styles.fabText}>TRACK</Text>
-      </TouchableOpacity>
-
-      <Modal visible={open} transparent animationType="none">
-        <TouchableOpacity style={styles.modalOverlay} onPress={() => setOpen(false)} />
-        <Animated.View style={[styles.modalSheet, { transform: [{ translateY: slideY }] }]}>
-          <Text style={styles.modalTitle}>LOG A DRINK</Text>
-          <View style={styles.drinkGrid}>
-            {DRINK_TYPES.map((dt) => (
-              <TouchableOpacity key={dt.label} style={styles.drinkBtn} onPress={() => addDrink(dt)}>
-                <Text style={{ fontSize: 30 }}>{dt.emoji}</Text>
-                <Text style={styles.drinkBtnText}>{dt.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-      </Modal>
+      <HomePageContent />
     </View>
   );
 }
@@ -194,21 +126,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, 
     paddingTop: 60, 
     alignItems: 'center', 
-    justifyContent: 'space-between', 
+    justifyContent: 'flex-end', 
     zIndex: 10 
   },
-  inputPill: { 
-    flex: 0.9, 
-    backgroundColor: 'rgba(34,34,34,0.8)', 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    padding: 12, 
-    borderRadius: 50, 
-    borderWidth: 1, 
-    borderColor: 'rgba(255,255,255,0.1)' 
-  },
-  circleIcon: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#555', marginRight: 10 },
-  inputPillText: { color: '#bbb', fontSize: 16, fontFamily: 'BebasNeue', letterSpacing: 1 },
+  navSpacer: { flex: 1 },
   navBtn: { color: '#aaa', fontSize: 14, fontFamily: 'BebasNeue' },
   body: { paddingHorizontal: 20, paddingBottom: 120 },
 
@@ -225,19 +146,10 @@ const styles = StyleSheet.create({
   },
 
   bacContainer: { 
-      alignItems: 'center', 
-      marginBottom: 40,
-      paddingTop: 200,        // Extra internal spacing to sink the number lower
-    },  
-    progressBarBackground: { 
-    width: '100%', 
-    height: 12, 
-    backgroundColor: 'rgba(255,255,255,0.1)', 
-    borderRadius: 6, 
-    overflow: 'hidden', 
-    marginBottom: 10 
+    alignItems: 'center', 
+    marginBottom: 40,
+    paddingTop: 200,
   },
-  progressBarFill: { height: '100%', backgroundColor: THEME_COLOR },
   bacValue: { 
     color: '#fff', 
     fontSize: 70, 
@@ -297,47 +209,4 @@ const styles = StyleSheet.create({
   },
   receiptButtonText: { color: THEME_COLOR, fontSize: 22, fontFamily: 'BebasNeue', letterSpacing: 1 },
   receiptButtonArrow: { color: THEME_COLOR, fontSize: 24 },
-
-  fab: { 
-    position: 'absolute', 
-    bottom: 30, 
-    right: 20, 
-    backgroundColor: THEME_COLOR, 
-    paddingVertical: 10, 
-    paddingHorizontal: 15, 
-    borderRadius: 15, 
-    alignItems: 'center', 
-    elevation: 8,
-    shadowColor: THEME_COLOR,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5
-  },
-  fabText: { color: '#fff', fontSize: 10, fontFamily: 'BebasNeue' },
-
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)' },
-  modalSheet: { 
-    position: 'absolute', 
-    bottom: 0, 
-    width: '100%', 
-    backgroundColor: '#0E0B09', 
-    borderTopLeftRadius: 30, 
-    borderTopRightRadius: 30, 
-    padding: 25, 
-    borderTopWidth: 2, 
-    borderTopColor: THEME_COLOR 
-  },
-  modalTitle: { color: '#fff', fontFamily: 'BebasNeue', fontSize: 24, marginBottom: 20, textAlign: 'center', letterSpacing: 1 },
-  drinkGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  drinkBtn: { 
-    width: '31%', 
-    backgroundColor: '#161210', 
-    padding: 15, 
-    borderRadius: 12, 
-    alignItems: 'center', 
-    marginBottom: 15, 
-    borderWidth: 1, 
-    borderColor: '#222' 
-  },
-  drinkBtnText: { color: '#fff', fontSize: 11, fontFamily: 'BebasNeue', marginTop: 8, letterSpacing: 1 },
 });
