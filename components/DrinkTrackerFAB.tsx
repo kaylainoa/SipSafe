@@ -119,6 +119,18 @@ const LIQUOR_OPTIONS: LiquorOption[] = [
   { label: "BRANDY", baseAbv: 38 },
 ];
 
+type MixerOption = { label: string; expectClear: boolean };
+const MIXER_OPTIONS: MixerOption[] = [
+  { label: "WATER", expectClear: true },
+  { label: "SODA", expectClear: true },
+  { label: "TONIC", expectClear: true },
+  { label: "SELTZER", expectClear: true },
+  { label: "JUICE", expectClear: false },
+  { label: "COLA", expectClear: false },
+  { label: "GINGER ALE", expectClear: true },
+  { label: "OTHER", expectClear: false },
+];
+
 function resolveDetectedDrinkOption(
   detectedType: string,
   options: DrinkOption[],
@@ -391,6 +403,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   const [autoAlertSentCritical, setAutoAlertSentCritical] = useState(false);
   const [drinkSearchQuery, setDrinkSearchQuery] = useState("");
   const [mixedEditorOpen, setMixedEditorOpen] = useState(false);
+  const [mixedMixer, setMixedMixer] = useState<MixerOption>(MIXER_OPTIONS[0]);
   const [mixedLiquor, setMixedLiquor] = useState<LiquorOption>(LIQUOR_OPTIONS[0]);
   const [mixedStrength, setMixedStrength] = useState(50);
   const [mixedSliderWidth, setMixedSliderWidth] = useState(1);
@@ -751,23 +764,66 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
       );
     }
   }, [bac]);
-  const addMixedDrink = useCallback(async () => {
+  const startMixedDrinkScan = useCallback(async () => {
     const strengthScale = mixedStrength / 100;
     const estimatedStd = Number((0.6 + strengthScale * 1.4).toFixed(2));
     const estimatedAbv = Number((mixedLiquor.baseAbv * (0.15 + strengthScale * 0.35)).toFixed(1));
     const mixedOption: DrinkOption = {
-      label: `MIXED (${mixedLiquor.label})`,
+      label: `MIXED (${mixedLiquor.label} ${mixedMixer.label})`,
       emoji: "🍹",
       standardDrinks: estimatedStd,
       abv: estimatedAbv,
     };
-    await addDrink(mixedOption);
-    setMixedEditorOpen(false);
-    Alert.alert(
-      "Mixed drink logged",
-      `${mixedLiquor.label} • Strength ${mixedStrength}% • Alcohol amount: ${estimatedStd.toFixed(2)} drinks`,
-    );
-  }, [addDrink, mixedLiquor, mixedStrength]);
+    const expectClear = mixedMixer.expectClear;
+
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Camera access needed", "Allow camera access to scan your drink for tampering (e.g. clear vodka water vs cloudy).");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      quality: 0.8,
+      base64: true,
+    });
+    if (result.canceled || !result.assets[0]?.base64) return;
+
+    setVerifying(true);
+    try {
+      const mimeType = (result.assets[0].mimeType === "image/png" ? "image/png" : "image/jpeg") as "image/jpeg" | "image/png";
+      const analysis = await analyzeDrinkForSpoofing(result.assets[0].base64, mimeType);
+
+      const concernText = analysis.concerns?.length ? "\n\n" + analysis.concerns.join("\n") : "";
+      if (!analysis.safe) {
+        Alert.alert(
+          "Scan: possible tampering",
+          analysis.summary + concernText + "\n\nWe didn't add this drink. Have a safe alternative or get a new drink.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+      if (expectClear && analysis.concerns?.some((c) => /cloud|opaque|sediment|particle|unusual/i.test(c))) {
+        Alert.alert(
+          "Scan: possible tampering",
+          "This drink should be clear (" + mixedLiquor.label + " + " + mixedMixer.label + "). " + analysis.summary + concernText,
+          [{ text: "OK" }]
+        );
+        return;
+      }
+      await addDrink(mixedOption);
+      setMixedEditorOpen(false);
+      Alert.alert(
+        "Mixed drink logged",
+        `${mixedLiquor.label} + ${mixedMixer.label} • Strength ${mixedStrength}% • ${estimatedStd.toFixed(2)} drinks. Stay safe.`,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Scan failed.";
+      Alert.alert("Scan error", msg + " Drink was not added. You can add it manually or try again.");
+    } finally {
+      setVerifying(false);
+    }
+  }, [addDrink, mixedLiquor, mixedMixer, mixedStrength]);
 
   const status = getBACStatus(bac);
   const totalStd = drinks.reduce((s, d) => s + d.standardDrinks, 0);
@@ -879,6 +935,29 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
             </TouchableOpacity>
             {mixedEditorOpen && (
               <View style={shS.mixedPanel}>
+                <Text style={shS.mixedTitle}>WHAT'S THE MIXER?</Text>
+                <View style={shS.mixedLiquorGrid}>
+                  {MIXER_OPTIONS.map((opt) => {
+                    const selected = opt.label === mixedMixer.label;
+                    return (
+                      <TouchableOpacity
+                        key={opt.label}
+                        style={[shS.mixedLiquorChip, selected && shS.mixedLiquorChipActive]}
+                        onPress={() => setMixedMixer(opt)}
+                        activeOpacity={0.85}
+                      >
+                        <Text
+                          style={[
+                            shS.mixedLiquorChipTxt,
+                            selected && shS.mixedLiquorChipTxtActive,
+                          ]}
+                        >
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
                 <Text style={shS.mixedTitle}>WHAT'S THE LIQUOR?</Text>
                 <View style={shS.mixedLiquorGrid}>
                   {LIQUOR_OPTIONS.map((opt) => {
@@ -918,8 +997,8 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
                   <Text style={shS.sliderLabelTxt}>LIGHT</Text>
                   <Text style={shS.sliderLabelTxt}>STRONG</Text>
                 </View>
-                <TouchableOpacity style={shS.mixedAddBtn} onPress={addMixedDrink} activeOpacity={0.85}>
-                  <Text style={shS.mixedAddBtnTxt}>ADD MIXED DRINK</Text>
+                <TouchableOpacity style={shS.mixedAddBtn} onPress={startMixedDrinkScan} activeOpacity={0.85}>
+                  <Text style={shS.mixedAddBtnTxt}>NEXT: SCAN FOR TAMPERING</Text>
                 </TouchableOpacity>
               </View>
             )}
