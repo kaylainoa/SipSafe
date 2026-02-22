@@ -46,21 +46,22 @@ export default function RootLayout() {
   // Don't render the app until fonts are ready
   if (!fontsLoaded && !fontError) return null;
 
-  return (
+ return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <DrinkProvider>
         <DrinkTrackerFAB>
-          <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
-          <Stack.Screen name="register" options={{ headerShown: false }} />
+          {/* Add screenOptions here to hide it globally */}
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen
+              name="modal"
+              options={{ presentation: "modal", title: "Modal", headerShown: true }} // Keep it here if you want a title on the modal
+            />
+            <Stack.Screen name="register" />
           </Stack>
         </DrinkTrackerFAB>
       </DrinkProvider>
-      <StatusBar style="auto" />
+      <StatusBar style="light" /> 
     </ThemeProvider>
   );
 }
