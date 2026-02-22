@@ -1,4 +1,5 @@
 import { api } from "@/constants/api";
+import { BebasNeue_400Regular, useFonts } from "@expo-google-fonts/bebas-neue";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -13,14 +14,19 @@ import {
   View,
 } from "react-native";
 
-/** Apple unicode */
-const AppleIcon = () => <Text style={icon.apple}></Text>;
+/** Apple Glyph */
+const AppleIcon = () => <Text style={s.appleIconText}></Text>;
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // Load the font
+  const [fontsLoaded] = useFonts({
+    BebasNeue_400Regular,
+  });
 
   const handleSubmit = async () => {
     if (!username.trim() || !password) return;
@@ -48,13 +54,22 @@ export default function LoginPage() {
     router.replace("/(tabs)");
   };
 
+  // Prevent rendering until fonts are ready
+  if (!fontsLoaded) {
+    return (
+      <View style={[s.safe, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator color="#FF4000" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.container}>
         {/* ══ HEADING ══ */}
         <View style={s.headingWrap}>
           <Text style={s.heading}>
-            {"Welcome to "}
+            WELCOME TO{"\n"}
             <Text style={s.headingAccent}>SIP SAFE</Text>
           </Text>
         </View>
@@ -63,8 +78,8 @@ export default function LoginPage() {
         <View style={s.inputsWrap}>
           <TextInput
             style={s.input}
-            placeholder="Email"
-            placeholderTextColor="#5c5c5c"
+            placeholder="EMAIL ADDRESS"
+            placeholderTextColor="rgba(255,255,255,0.3)"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -74,8 +89,8 @@ export default function LoginPage() {
           />
           <TextInput
             style={s.input}
-            placeholder="Password"
-            placeholderTextColor="#5c5c5c"
+            placeholder="PASSWORD"
+            placeholderTextColor="rgba(255,255,255,0.3)"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
@@ -95,7 +110,7 @@ export default function LoginPage() {
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={s.ctaLabel}>Sign In</Text>
+            <Text style={s.ctaLabel}>SIGN IN</Text>
           )}
         </TouchableOpacity>
 
@@ -105,49 +120,44 @@ export default function LoginPage() {
           style={s.registerWrap}
         >
           <Text style={s.registerText}>
-            Don't have an account? <Text style={s.registerLink}>Sign Up</Text>
+            DON'T HAVE AN ACCOUNT? <Text style={s.registerLink}>SIGN UP</Text>
           </Text>
         </TouchableOpacity>
 
-        {/* ══ "Or continue with" label ══ */}
-        <Text style={s.signUpLabel}>Or continue with</Text>
-
-        {/* ══ Push social buttons to bottom ══ */}
         <View style={{ flex: 1 }} />
 
-        {/* ══ SOCIAL BUTTONS ══ */}
+        {/* ══ Social Section ══ */}
+        <Text style={s.socialDividerLabel}>OR CONTINUE WITH</Text>
+
         <View style={s.socialRow}>
           <TouchableOpacity
             style={s.socialPill}
             onPress={() => handleSocialLogin("Google")}
-            activeOpacity={0.8}
           >
-            <Text style={s.socialLabel}>Google</Text>
+            <Text style={s.socialLabel}>GOOGLE</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={s.socialPill}
             onPress={() => handleSocialLogin("Apple")}
-            activeOpacity={0.8}
           >
-            <View style={s.appleInner}>
+            <View style={s.socialInner}>
               <AppleIcon />
-              <Text style={s.socialLabel}>Apple</Text>
+              <Text style={s.socialLabel}>APPLE</Text>
             </View>
           </TouchableOpacity>
         </View>
 
-        <View style={{ height: 20 }} />
+        <View style={{ height: Platform.OS === "ios" ? 10 : 30 }} />
       </View>
     </SafeAreaView>
   );
 }
 
 const BG = "#111111";
-const INPUT_BG = "#242424";
-const ORANGE = "#ff4000";
-const SERIF = "InstrumentSerif-Regular";
-const SANS = Platform.select({ ios: "System", android: "sans-serif" });
+const INPUT_BG = "#1F1F1F";
+const ORANGE = "#FF4000";
+const BEBAS = "BebasNeue_400Regular";
 
 const s = StyleSheet.create({
   safe: {
@@ -156,126 +166,101 @@ const s = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: BG,
     paddingHorizontal: 26,
-    paddingTop: Platform.OS === "android" ? 44 : 16,
   },
-
-  /* ── Heading ── */
   headingWrap: {
-    marginTop: 36,
+    marginTop: 60,
   },
   heading: {
-    fontFamily: SERIF,
-    fontSize: 40,
-    lineHeight: 50,
+    fontFamily: BEBAS,
+    fontSize: 56,
+    lineHeight: 54,
     color: "#ffffff",
-    textAlign: "left",
-    letterSpacing: -0.5,
+    letterSpacing: 0.5,
   },
   headingAccent: {
-    fontFamily: SERIF,
-    fontSize: 40,
-    color: "#ffffff",
+    fontFamily: BEBAS,
+    color: ORANGE,
   },
-
-  /* ── Inputs ── */
   inputsWrap: {
-    marginTop: 56,
-    gap: 14,
+    marginTop: 44,
+    gap: 12,
   },
   input: {
     backgroundColor: INPUT_BG,
     color: "#ffffff",
-    fontSize: 18,
-    fontFamily: SERIF,
-    paddingVertical: 17,
+    fontSize: 20,
+    fontFamily: BEBAS,
+    paddingVertical: 15,
     paddingHorizontal: 22,
-    borderRadius: 100,
+    borderRadius: 12,
+    letterSpacing: 1.2,
   },
-
-  /* ── Orange CTA ── */
   cta: {
     backgroundColor: ORANGE,
-    borderRadius: 100,
-    height: 58,
-    marginTop: 32,
+    borderRadius: 12,
+    height: 60,
+    marginTop: 24,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: ORANGE,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 18,
-    elevation: 10,
+    elevation: 8,
   },
   ctaLabel: {
-    fontFamily: SERIF,
-    fontSize: 22,
+    fontFamily: BEBAS,
+    fontSize: 24,
     color: "#ffffff",
-    letterSpacing: 0.3,
+    letterSpacing: 2,
   },
-
-  /* ── Register link ── */
   registerWrap: {
-    marginTop: 16,
+    marginTop: 20,
     alignItems: "center",
   },
   registerText: {
-    color: "rgba(255,255,255,0.45)",
-    fontSize: 14,
-    fontFamily: SANS,
+    color: "rgba(255,255,255,0.4)",
+    fontSize: 16,
+    fontFamily: BEBAS,
+    letterSpacing: 1,
   },
   registerLink: {
     color: ORANGE,
-    fontWeight: "600",
   },
-
-  /* ── "Or continue with" ── */
-  signUpLabel: {
-    marginTop: 24,
-    color: "rgba(255,255,255,0.45)",
+  socialDividerLabel: {
+    marginBottom: 16,
+    color: "rgba(255,255,255,0.3)",
     fontSize: 14,
-    fontFamily: SANS,
+    fontFamily: BEBAS,
     textAlign: "center",
-    letterSpacing: 0.2,
+    letterSpacing: 1.5,
   },
-
-  /* ── Social row ── */
   socialRow: {
     flexDirection: "row",
     gap: 12,
   },
   socialPill: {
     flex: 1,
+    height: 54,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 9,
     backgroundColor: "#1b1b1b",
     borderWidth: 1,
     borderColor: "#2e2e2e",
-    borderRadius: 100,
-    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  socialInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   socialLabel: {
     color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "500",
-    fontFamily: SANS,
+    fontSize: 18,
+    fontFamily: BEBAS,
+    letterSpacing: 1,
   },
-  appleInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-    marginRight: 14,
-  },
-});
-
-const icon = StyleSheet.create({
-  apple: {
-    fontSize: 19,
+  appleIconText: {
+    fontSize: 22,
     color: "#ffffff",
-    lineHeight: 21,
-    marginTop: Platform.OS === "android" ? 0 : -2,
+    marginTop: -4,
   },
 });
