@@ -534,7 +534,12 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     } catch {
       // Keep fallback location text.
     }
-    const alertMessage = `SipSafe alert: I may need help. BAC: ${bac.toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`;
+    const alertMessage =
+      bac >= 0.3
+        ? `SipSafe alert: I had DANGEROUS amount of alcohol, please help me. BAC: ${bac.toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`
+        : bac >= BAC_DANGER
+          ? `SipSafe alert: I had a HIGH amount of alcohol intake, I may need help. BAC: ${bac.toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`
+          : `SipSafe alert: I may need help. BAC: ${bac.toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`;
     try {
       type Contact = { label: string; phone: string };
       let contacts: Contact[] = [];
