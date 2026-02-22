@@ -106,6 +106,40 @@ const CATEGORY_EMOJI: Record<string, string> = {
   "non-alcoholic": "🫧",
 };
 
+function resolveDetectedDrinkOption(
+  detectedType: string,
+  options: DrinkOption[],
+): DrinkOption | null {
+  const normalized = detectedType.trim().toLowerCase();
+  if (!normalized) return null;
+
+  const byDirectLabel = options.find((o) =>
+    normalized.includes(o.label.toLowerCase()),
+  );
+  if (byDirectLabel) return byDirectLabel;
+
+  if (normalized.includes("beer") || normalized.includes("lager") || normalized.includes("ipa")) {
+    return options.find((o) => o.label === "BEER") ?? null;
+  }
+  if (normalized.includes("wine") || normalized.includes("chardonnay") || normalized.includes("merlot")) {
+    return options.find((o) => o.label === "WINE") ?? null;
+  }
+  if (normalized.includes("shot") || normalized.includes("whiskey") || normalized.includes("vodka") || normalized.includes("tequila") || normalized.includes("spirit")) {
+    return options.find((o) => o.label === "SHOT") ?? null;
+  }
+  if (normalized.includes("cocktail") || normalized.includes("mixed") || normalized.includes("solo cup")) {
+    return options.find((o) => o.label === "COCKTAIL") ?? null;
+  }
+  if (normalized.includes("seltzer") || normalized.includes("hard seltzer")) {
+    return options.find((o) => o.label === "SELTZER") ?? null;
+  }
+  if (normalized.includes("cider")) {
+    return options.find((o) => o.label === "CIDER") ?? null;
+  }
+
+  return null;
+}
+
 // ─── Types & BAC logic ────────────────────────────────────────────────────────
 const BAC_SAFE = 0.06;
 const BAC_CAUTION = 0.1;
@@ -341,6 +375,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   const [sessionStart] = useState(new Date());
   const [bacProfile, setBacProfile] = useState<BACProfile>({ weightLbs: DEFAULT_WEIGHT_LBS, gender: DEFAULT_GENDER });
   const [autoAlertSent, setAutoAlertSent] = useState(false);
+  const [autoAlertSentCritical, setAutoAlertSentCritical] = useState(false);
   const [drinkSearchQuery, setDrinkSearchQuery] = useState("");
 
   const drinkOptions: DrinkOption[] = [...DRINK_TYPES, ...drinkOptionsFromApi];
@@ -476,6 +511,60 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     } finally { setVerifying(false); }
   }, [addDrink, verifying]);
 
+  const detectAndAddDrinkWithCamera = useCallback(async () => {
+    if (verifying) return;
+
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Camera access needed", "Allow camera access for AI drink detection.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      quality: 0.8,
+      base64: true,
+    });
+    if (result.canceled || !result.assets[0]?.base64) return;
+
+    setVerifying(true);
+    try {
+      // Use Gemini vision to infer drink type from the image itself.
+      const analysis = await verifyDrinkWithGemini(
+        result.assets[0].base64,
+        "UNSPECIFIED",
+        result.assets[0].mimeType === "image/png" ? "image/png" : "image/jpeg",
+      );
+      await speakText(analysis.voiceMessage);
+
+      if (analysis.spoofingLikely || analysis.druggingLikely) {
+        Alert.alert(
+          "Detection blocked",
+          `${analysis.summary}\n\nPossible spoofing or drink-tampering signs detected. Drink was not added.`,
+        );
+        return;
+      }
+
+      const detected = resolveDetectedDrinkOption(analysis.matchedDrinkType, drinkOptions);
+      if (!detected) {
+        Alert.alert(
+          "Could not detect drink",
+          `Gemini saw: ${analysis.matchedDrinkType}. Please select a drink manually.`,
+        );
+        return;
+      }
+
+      await addDrink(detected);
+      Alert.alert("Drink detected", `Detected ${detected.label}. ${analysis.summary}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error.";
+      Alert.alert("Detection error", `AI camera detect failed. ${message}`);
+    } finally {
+      setVerifying(false);
+    }
+  }, [addDrink, drinkOptions, verifying]);
+
   const promptVerifyDrink = useCallback(
     async (drinkIdToRevoke?: string) => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -527,6 +616,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
           clearDrinks();
           setWaterNudge(false);
           setAutoAlertSent(false);
+          setAutoAlertSentCritical(false);
           setOpen(false);
         },
       },
@@ -650,6 +740,13 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     }
   }, [autoAlertSent, bac, drinks.length, sendAlert]);
 
+  useEffect(() => {
+    if (!autoAlertSentCritical && bac >= 0.3 && drinks.length > 0) {
+      setAutoAlertSentCritical(true);
+      void sendAlert();
+    }
+  }, [autoAlertSentCritical, bac, drinks.length, sendAlert]);
+
   // FAB appearance reacts to session state
   const fabBg = drinks.length === 0 ? C.surface : isDanger ? C.red : C.redDark;
 
@@ -719,6 +816,9 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
                 ))}
               </ScrollView>
             </View>
+            <TouchableOpacity style={shS.aiDetectBtn} onPress={detectAndAddDrinkWithCamera}>
+              <Text style={shS.aiDetectBtnTxt}>📷 AI CAMERA DETECT DRINK</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={shS.alertBtn} onPress={sendAlert}><Text style={shS.alertBtnTxt}>📍 ALERT MY FRIENDS</Text></TouchableOpacity>
             <View style={shS.logSection}>
               <Text style={shS.logTitle}>DRINK LOG</Text>
@@ -818,6 +918,22 @@ const shS = StyleSheet.create({
   drinkBtn: { width: (SW - 52) / 3, backgroundColor: "#161210", borderRadius: 2, borderWidth: 1, borderColor: "#2C2520", alignItems: "center", paddingVertical: 14 },
   drinkEmoji: { fontSize: 24, marginBottom: 5 },
   drinkName: { color: "#F0EBE1", fontSize: 12, fontFamily: MONO, fontWeight: "900", textAlign: "center" },
+  aiDetectBtn: {
+    backgroundColor: "rgba(17,17,17,0.9)",
+    borderWidth: 1.5,
+    borderColor: "#ff4000",
+    borderRadius: 2,
+    paddingVertical: 13,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  aiDetectBtnTxt: {
+    color: "#F0EBE1",
+    fontSize: 14,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+  },
   alertBtn: { backgroundColor: "#161210", borderWidth: 1.5, borderColor: "#ff4000", borderRadius: 2, paddingVertical: 15, alignItems: "center" },
   alertBtnTxt: { color: "#ff4000", fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2.5 },
   logSection: { marginTop: 12, backgroundColor: "#161210", borderWidth: 1, borderColor: "#2C2520", borderRadius: 2, padding: 12 },
