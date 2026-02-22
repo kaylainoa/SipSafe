@@ -16,7 +16,7 @@ const RANGES = [
   { key: "1w", label: "1 Week" },
   { key: "1m", label: "1 Month" },
   { key: "1y", label: "1 Year" },
-  { key: "all", label: "All Time" },
+  { key: "all", label: "All" },
 ] as const;
 
 type RangeKey = (typeof RANGES)[number]["key"];
@@ -51,14 +51,19 @@ function buildAnalyticsFromLogs(logs: LogEntry[], r: RangeKey): Analytics {
   if (r === "1d") startDate = new Date(now.getTime() - dayMs);
   else if (r === "1w") startDate = new Date(now.getTime() - 7 * dayMs);
   else if (r === "1m") startDate = new Date(now.getTime() - 30 * dayMs);
-  else if (r === "1y") startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+  else if (r === "1y")
+    startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
   else startDate = new Date(0);
 
   const inRange = logs.filter((l) => new Date(l.createdAt) >= startDate);
-  const bucketMap = new Map<string, { count: number; pureAlcoholMl: number; label: string }>();
+  const bucketMap = new Map<
+    string,
+    { count: number; pureAlcoholMl: number; label: string }
+  >();
 
   if (r === "1d") {
-    for (let h = 0; h < 24; h++) bucketMap.set(`${h}`, { count: 0, pureAlcoholMl: 0, label: `${h}:00` });
+    for (let h = 0; h < 24; h++)
+      bucketMap.set(`${h}`, { count: 0, pureAlcoholMl: 0, label: `${h}:00` });
     inRange.forEach((l) => {
       const h = new Date(l.createdAt).getHours();
       const b = bucketMap.get(`${h}`);
@@ -71,7 +76,14 @@ function buildAnalyticsFromLogs(logs: LogEntry[], r: RangeKey): Analytics {
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      bucketMap.set(key, { count: 0, pureAlcoholMl: 0, label: d.toLocaleDateString("default", { month: "short", year: "2-digit" }) });
+      bucketMap.set(key, {
+        count: 0,
+        pureAlcoholMl: 0,
+        label: d.toLocaleDateString("default", {
+          month: "short",
+          year: "2-digit",
+        }),
+      });
     }
     inRange.forEach((l) => {
       const d = new Date(l.createdAt);
@@ -87,7 +99,11 @@ function buildAnalyticsFromLogs(logs: LogEntry[], r: RangeKey): Analytics {
     const end = new Date(now.getTime() + dayMs);
     while (cursor < end) {
       const key = cursor.toISOString().slice(0, 10);
-      bucketMap.set(key, { count: 0, pureAlcoholMl: 0, label: cursor.toLocaleDateString("default", { weekday: "short" }) });
+      bucketMap.set(key, {
+        count: 0,
+        pureAlcoholMl: 0,
+        label: cursor.toLocaleDateString("default", { weekday: "short" }),
+      });
       cursor.setDate(cursor.getDate() + 1);
     }
     inRange.forEach((l) => {
@@ -102,17 +118,28 @@ function buildAnalyticsFromLogs(logs: LogEntry[], r: RangeKey): Analytics {
 
   const buckets: Bucket[] = Array.from(bucketMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, v]) => ({ label: v.label, date, count: v.count, pureAlcoholMl: v.pureAlcoholMl }));
+    .map(([date, v]) => ({
+      label: v.label,
+      date,
+      count: v.count,
+      pureAlcoholMl: v.pureAlcoholMl,
+    }));
 
   const totalDrinks = inRange.length;
-  const totalPureAlcoholMl = inRange.reduce((s, l) => s + (l.pureAlcoholMl ?? 0), 0);
+  const totalPureAlcoholMl = inRange.reduce(
+    (s, l) => s + (l.pureAlcoholMl ?? 0),
+    0,
+  );
 
-  const sortedTimes = inRange.map((l) => new Date(l.createdAt).getTime()).sort((a, b) => a - b);
+  const sortedTimes = inRange
+    .map((l) => new Date(l.createdAt).getTime())
+    .sort((a, b) => a - b);
   let avgHoursBetween = 0;
   let longestGapHours = 0;
   if (sortedTimes.length >= 2) {
     const gaps = [];
-    for (let i = 1; i < sortedTimes.length; i++) gaps.push((sortedTimes[i] - sortedTimes[i - 1]) / (60 * 60 * 1000));
+    for (let i = 1; i < sortedTimes.length; i++)
+      gaps.push((sortedTimes[i] - sortedTimes[i - 1]) / (60 * 60 * 1000));
     avgHoursBetween = gaps.reduce((a, b) => a + b, 0) / gaps.length;
     longestGapHours = Math.max(...gaps);
   }
@@ -157,7 +184,10 @@ export default function StatsScreen() {
     } catch (e) {
       try {
         const logs = (await api.getLogs({ limit: 500 })) as LogEntry[];
-        const built = buildAnalyticsFromLogs(Array.isArray(logs) ? logs : [], r);
+        const built = buildAnalyticsFromLogs(
+          Array.isArray(logs) ? logs : [],
+          r,
+        );
         setData(built);
       } catch (fallbackErr) {
         setError(e instanceof Error ? e.message : "Failed to load data");
@@ -189,7 +219,10 @@ export default function StatsScreen() {
         {RANGES.map((r) => (
           <TouchableOpacity
             key={r.key}
-            style={[styles.filterPill, range === r.key && styles.filterPillActive]}
+            style={[
+              styles.filterPill,
+              range === r.key && styles.filterPillActive,
+            ]}
             onPress={() => setRange(r.key)}
           >
             <Text
@@ -197,6 +230,8 @@ export default function StatsScreen() {
                 styles.filterPillText,
                 range === r.key && styles.filterPillTextActive,
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               {r.label}
             </Text>
@@ -230,8 +265,7 @@ export default function StatsScreen() {
                         style={[
                           styles.bar,
                           {
-                            height:
-                              (b.count / maxCount) * CHART_HEIGHT || 4,
+                            height: (b.count / maxCount) * CHART_HEIGHT || 4,
                           },
                         ]}
                       />
@@ -245,7 +279,9 @@ export default function StatsScreen() {
 
               <View style={styles.statsRow}>
                 <View style={styles.statCard}>
-                  <Text style={styles.statValue}>{data.totals.totalDrinks}</Text>
+                  <Text style={styles.statValue}>
+                    {data.totals.totalDrinks}
+                  </Text>
                   <Text style={styles.statLabel}>Total drinks</Text>
                 </View>
                 <View style={styles.statCard}>
@@ -258,12 +294,15 @@ export default function StatsScreen() {
 
               <Text style={styles.sectionTitle}>Trends</Text>
               <View style={styles.trendCard}>
-                <Text style={styles.trendLabel}>Consumption vs previous period</Text>
+                <Text style={styles.trendLabel}>
+                  Consumption vs previous period
+                </Text>
                 <Text
                   style={[
                     styles.trendValue,
                     data.trends.consumptionDirection === "up" && styles.trendUp,
-                    data.trends.consumptionDirection === "down" && styles.trendDown,
+                    data.trends.consumptionDirection === "down" &&
+                      styles.trendDown,
                   ]}
                 >
                   {data.trends.consumptionDirection === "up"
@@ -284,7 +323,9 @@ export default function StatsScreen() {
                 </Text>
               </View>
               <View style={styles.trendCard}>
-                <Text style={styles.trendLabel}>Longest gap between drinks</Text>
+                <Text style={styles.trendLabel}>
+                  Longest gap between drinks
+                </Text>
                 <Text style={styles.trendValue}>
                   {data.trends.longestGapHours.toFixed(1)} hrs
                 </Text>
@@ -292,7 +333,9 @@ export default function StatsScreen() {
             </>
           ) : (
             <View style={styles.centered}>
-              <Text style={styles.emptyText}>No consumption data for this period.</Text>
+              <Text style={styles.emptyText}>
+                No consumption data for this period.
+              </Text>
             </View>
           )}
         </ScrollView>
@@ -313,40 +356,59 @@ const styles = StyleSheet.create({
     borderBottomColor: "#222",
   },
   backBtn: { marginRight: 16 },
-  backText: { color: THEME, fontSize: 16 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
+  backText: { color: THEME, fontSize: 16, fontFamily: "BebasNeue" },
+  title: {
+    color: "#fff",
+    fontSize: 24,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1,
+  },
 
   filterRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     paddingHorizontal: 20,
     paddingVertical: 12,
-    gap: 8,
+    gap: 6,
   },
   filterPill: {
-    paddingHorizontal: 14,
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 6,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 0,
     backgroundColor: "#1c1c1c",
     borderWidth: 1,
     borderColor: "#333",
+    alignItems: "center",
   },
   filterPillActive: { backgroundColor: THEME, borderColor: THEME },
-  filterPillText: { color: "#999", fontSize: 13 },
-  filterPillTextActive: { color: "#fff", fontWeight: "600" },
+  filterPillText: { color: "#999", fontSize: 12, fontFamily: "BebasNeue" },
+  filterPillTextActive: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1,
+  },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 120 },
 
   chartCard: {
     backgroundColor: "rgba(20,20,20,0.9)",
-    borderRadius: 20,
+    borderRadius: 0,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#2a2a2a",
   },
-  cardTitle: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 16 },
+  cardTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1,
+    marginBottom: 16,
+  },
   chartContainer: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -361,37 +423,75 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginBottom: 6,
   },
-  barLabel: { color: "#888", fontSize: 9, maxWidth: 36, textAlign: "center" },
+  barLabel: {
+    color: "#888",
+    fontSize: 11,
+    fontFamily: "BebasNeue",
+    maxWidth: 40,
+    textAlign: "center",
+  },
 
   statsRow: { flexDirection: "row", gap: 12, marginBottom: 24 },
   statCard: {
     flex: 1,
     backgroundColor: "rgba(20,20,20,0.9)",
-    borderRadius: 16,
+    borderRadius: 0,
     padding: 18,
     borderWidth: 1,
     borderColor: "#2a2a2a",
   },
-  statValue: { color: "#fff", fontSize: 22, fontWeight: "800" },
-  statLabel: { color: "#888", fontSize: 12, marginTop: 4 },
+  statValue: {
+    color: "#fff",
+    fontSize: 22,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1,
+  },
+  statLabel: {
+    color: "#888",
+    fontSize: 16,
+    fontFamily: "BebasNeue",
+    marginTop: 4,
+  },
 
-  sectionTitle: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 12 },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
   trendCard: {
     backgroundColor: "rgba(20,20,20,0.9)",
-    borderRadius: 16,
+    borderRadius: 0,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: "#2a2a2a",
   },
-  trendLabel: { color: "#888", fontSize: 12 },
-  trendValue: { color: "#fff", fontSize: 18, fontWeight: "700", marginTop: 4 },
+  trendLabel: { color: "#888", fontSize: 15, fontFamily: "BebasNeue" },
+  trendValue: {
+    color: "#fff",
+    fontSize: 18,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1,
+    marginTop: 4,
+  },
   trendUp: { color: "#ff6b6b" },
   trendDown: { color: "#51cf66" },
-  trendSub: { color: "#666", fontSize: 11, marginTop: 4 },
+  trendSub: {
+    color: "#666",
+    fontSize: 13,
+    fontFamily: "BebasNeue",
+    marginTop: 4,
+  },
 
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40 },
-  loadingText: { color: "#888", marginTop: 12 },
-  errorText: { color: "#ff6b6b", textAlign: "center" },
-  emptyText: { color: "#888", textAlign: "center" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+  },
+  loadingText: { color: "#888", fontFamily: "BebasNeue", marginTop: 12 },
+  errorText: { color: "#ff6b6b", fontFamily: "BebasNeue", textAlign: "center" },
+  emptyText: { color: "#888", fontFamily: "BebasNeue", textAlign: "center" },
 });

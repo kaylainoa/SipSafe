@@ -1,6 +1,6 @@
 const express = require("express");
+const fetch = require("node-fetch");
 const router = express.Router();
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 const DrinkLog = require("../models/DrinkLog");
 const User = require("../models/User");
 const jwtAuth = require("../middleware/jwtAuth");
@@ -10,43 +10,82 @@ const {
 } = require("../utils/bacCalculator");
 const { estimateCustomABV } = require("../utils/customDrinkAbv");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const SCAN_PROMPT = `Analyze this drink image and return ONLY a valid JSON object with no extra text:
+{
+  "drinkName": "identified drink name or Unknown",
+  "estimatedABV": number between 0 and 100,
+  "drinkCategory": "beer, wine, spirits, cocktail, or non-alcoholic",
+  "colorAppearance": "description of color",
+  "clarity": "clear, cloudy, very cloudy, or opaque",
+  "tamperingRisk": "none, low, medium, or high",
+  "tamperingReasons": ["array of reasons, empty if none"],
+  "safetyAlert": true or false,
+  "notes": "any other observations"
+}
 
-// POST /api/drinklogs/scan - scan a drink image with Gemini
+Set safetyAlert to true and tamperingRisk to high if:
+- The drink appears unexpectedly cloudy for its type
+- Unusual sediment or floating particles are visible
+- The color looks wrong for the identified drink type
+- Any visual anomaly inconsistent with a normal drink`;
+
+// POST /api/drinklogs/scan - scan a drink image with Gemini (REST, same as identifyDrink)
 router.post("/scan", jwtAuth, async (req, res) => {
   try {
     const { imageBase64 } = req.body;
-
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    const prompt = `Analyze this drink image and return ONLY a valid JSON object with no extra text:
-    {
-      "drinkName": "identified drink name or Unknown",
-      "estimatedABV": number between 0 and 100,
-      "drinkCategory": "beer, wine, spirits, cocktail, or non-alcoholic",
-      "colorAppearance": "description of color",
-      "clarity": "clear, cloudy, very cloudy, or opaque",
-      "tamperingRisk": "none, low, medium, or high",
-      "tamperingReasons": ["array of reasons, empty if none"],
-      "safetyAlert": true or false,
-      "notes": "any other observations"
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
     }
-    
-    Set safetyAlert to true and tamperingRisk to high if:
-    - The drink appears unexpectedly cloudy for its type
-    - Unusual sediment or floating particles are visible
-    - The color looks wrong for the identified drink type
-    - Any visual anomaly inconsistent with a normal drink`;
+    if (!imageBase64) {
+      return res.status(400).json({ error: "imageBase64 required" });
+    }
 
-    const result = await model.generateContent([
-      prompt,
-      { inlineData: { mimeType: "image/jpeg", data: imageBase64 } },
-    ]);
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { inline_data: { mime_type: "image/jpeg", data: imageBase64 } },
+                { text: SCAN_PROMPT },
+              ],
+            },
+          ],
+        }),
+      }
+    );
 
-    const text = result.response.text();
-    const cleaned = text.replace(/```json|```/g, "").trim();
-    const scanResult = JSON.parse(cleaned);
+    if (!geminiRes.ok) {
+      const errBody = await geminiRes.text();
+      return res.status(502).json({ error: `Gemini API ${geminiRes.status}: ${errBody.slice(0, 200)}` });
+    }
 
+    const json = await geminiRes.json();
+    const blockReason = json?.promptFeedback?.blockReason;
+    if (blockReason) {
+      return res.status(400).json({ error: `Content blocked: ${blockReason}` });
+    }
+
+    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!text) {
+      return res.status(502).json({ error: "No response from Gemini" });
+    }
+
+    let jsonStr = text;
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) jsonStr = jsonMatch[1].trim();
+    else {
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}") + 1;
+      if (start >= 0 && end > start) jsonStr = text.slice(start, end);
+    }
+    jsonStr = jsonStr.replace(/```json|```/g, "").trim();
+
+    const scanResult = JSON.parse(jsonStr);
     res.json(scanResult);
   } catch (err) {
     res.status(500).json({ error: err.message });

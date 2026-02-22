@@ -1,5 +1,6 @@
 // app/_layout.tsx
 
+import { BebasNeue_400Regular } from "@expo-google-fonts/bebas-neue";
 import {
   InstrumentSerif_400Regular,
   useFonts,
@@ -30,6 +31,7 @@ export default function RootLayout() {
 
   const [fontsLoaded, fontError] = useFonts({
     "InstrumentSerif-Regular": InstrumentSerif_400Regular,
+    BebasNeue: BebasNeue_400Regular,
   });
 
   useEffect(() => {
