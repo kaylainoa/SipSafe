@@ -266,9 +266,11 @@ export default function StatsScreen() {
                     data.trends.consumptionDirection === "down" && styles.trendDown,
                   ]}
                 >
-                  {data.trends.consumptionDirection === "up" && "↑ Up"}
-                  {data.trends.consumptionDirection === "down" && "↓ Down"}
-                  {data.trends.consumptionDirection === "same" && "→ Same"}
+                  {data.trends.consumptionDirection === "up"
+                    ? "↑ Up"
+                    : data.trends.consumptionDirection === "down"
+                      ? "↓ Down"
+                      : "→ Same"}
                 </Text>
                 <Text style={styles.trendSub}>
                   {data.trends.currentPeriodDrinks} drinks now vs{" "}

@@ -234,6 +234,14 @@ type BackendProfile = {
   emergencyContacts?: { label?: string; phone?: string }[];
 };
 
+/** Format a date as MM/DD/YYYY using UTC so stored midnight UTC (e.g. 2006-01-05) shows as Jan 5, not Jan 4 in US zones. */
+function formatDobAsMMDDYYYY(d: Date): string {
+  const mo = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  return `${mo}/${day}/${year}`;
+}
+
 function userToProfileData(user: { email?: string; profile?: BackendProfile; id?: string } | null): ProfileData {
   if (!user) {
     return {
@@ -250,9 +258,12 @@ function userToProfileData(user: { email?: string; profile?: BackendProfile; id?
   const p = user.profile;
   const dob =
     p?.dateOfBirth instanceof Date
-      ? p.dateOfBirth.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
+      ? formatDobAsMMDDYYYY(p.dateOfBirth)
       : typeof p?.dateOfBirth === "string"
-        ? p.dateOfBirth
+        ? (() => {
+            const d = new Date(p.dateOfBirth);
+            return Number.isNaN(d.getTime()) ? p.dateOfBirth : formatDobAsMMDDYYYY(d);
+          })()
         : "";
   return {
     name: p?.name ?? "User",
@@ -559,7 +570,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: 1,
     borderColor: "#2F2F2F",
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingVertical: 10,
   },
   infoRow: {
@@ -567,13 +578,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 14,
+    gap: 12,
   },
   infoLabel: {
     color: TEXT,
     fontSize: 20,
     fontFamily: "BebasNeue",
     letterSpacing: 1.1,
-    flex: 1,
+    flex: 0,
   },
   infoLabelAccent: {
     color: ORANGE,
@@ -585,6 +597,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.7,
     textAlign: "right",
     flex: 1,
+    minWidth: 0,
+    paddingLeft: 8,
   },
   divider: {
     height: 1,
