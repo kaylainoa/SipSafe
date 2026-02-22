@@ -1,10 +1,10 @@
-import { api } from '@/constants/api';
-import { useDrinkContext } from '@/contexts/DrinkContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import React, { useCallback, useEffect, useState } from 'react';
+import { api } from "@/constants/api";
+import { useDrinkContext } from "@/contexts/DrinkContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
+import { useRouter } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -16,17 +16,17 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
-} from 'react-native';
+  View,
+} from "react-native";
 
 // Fonts
-import { BebasNeue_400Regular, useFonts } from '@expo-google-fonts/bebas-neue';
-import { SpecialElite_400Regular } from '@expo-google-fonts/special-elite';
+import { BebasNeue_400Regular, useFonts } from "@expo-google-fonts/bebas-neue";
+import { SpecialElite_400Regular } from "@expo-google-fonts/special-elite";
 
-const THEME_COLOR = '#FF4000';
+const THEME_COLOR = "#FF4000";
 const SAFE_STREAK_BAC_LIMIT = 0.15; // Streak breaks when daily BAC >= this (today considered)
 
-const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
 type LogEntry = { createdAt: string; estimatedBacContribution?: number };
 
@@ -54,13 +54,15 @@ function computeSafeStreak(logs: LogEntry[]): number {
 function HomePageContent() {
   const router = useRouter();
   const { bac } = useDrinkContext();
-  const [weeklyCounts, setWeeklyCounts] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+  const [weeklyCounts, setWeeklyCounts] = useState<number[]>([
+    0, 0, 0, 0, 0, 0, 0,
+  ]);
   const [safeStreakDays, setSafeStreakDays] = useState<number>(0);
   const safeBac = bac ?? 0;
 
   const loadWeekly = useCallback(async () => {
     try {
-      const res = await api.getConsumptionAnalytics('1w');
+      const res = await api.getConsumptionAnalytics("1w");
       const buckets = (res as { buckets?: { count: number }[] })?.buckets;
       if (Array.isArray(buckets) && buckets.length >= 7) {
         setWeeklyCounts(buckets.slice(0, 7).map((b) => b.count));
@@ -76,7 +78,9 @@ function HomePageContent() {
       // fallback: use getLogs and bucket last 7 days
     }
     try {
-      const logs = (await api.getLogs({ limit: 100 })) as { createdAt: string }[];
+      const logs = (await api.getLogs({ limit: 100 })) as {
+        createdAt: string;
+      }[];
       const list = Array.isArray(logs) ? logs : [];
       const now = new Date();
       const dayMs = 24 * 60 * 60 * 1000;
@@ -145,7 +149,11 @@ function HomePageContent() {
 
       try {
         const me = await api.getMe();
-        if (me?.profile != null && !me.error && Array.isArray(me.profile?.emergencyContacts)) {
+        if (
+          me?.profile != null &&
+          !me.error &&
+          Array.isArray(me.profile?.emergencyContacts)
+        ) {
           const asUser = { id: me.id, email: me.email, profile: me.profile };
           await AsyncStorage.setItem("user", JSON.stringify(asUser));
           contacts = me.profile.emergencyContacts
@@ -163,7 +171,9 @@ function HomePageContent() {
         const rawUser = await AsyncStorage.getItem("user");
         if (rawUser) {
           const parsed = JSON.parse(rawUser) as {
-            profile?: { emergencyContacts?: Array<{ label?: string; phone?: string }> };
+            profile?: {
+              emergencyContacts?: { label?: string; phone?: string }[];
+            };
           };
           if (Array.isArray(parsed?.profile?.emergencyContacts)) {
             contacts = parsed.profile.emergencyContacts
@@ -177,7 +187,10 @@ function HomePageContent() {
       }
 
       if (contacts.length === 0) {
-        Alert.alert("No emergency contacts", "Add at least one emergency contact in Profile.");
+        Alert.alert(
+          "No emergency contacts",
+          "Add at least one emergency contact in Profile.",
+        );
         return;
       }
 
@@ -186,7 +199,10 @@ function HomePageContent() {
         .filter((c) => c.phone.length >= 10 && c.phone !== "1234567890");
 
       if (recipients.length === 0) {
-        Alert.alert("No emergency contacts", "Add a valid emergency contact phone number in Profile.");
+        Alert.alert(
+          "No emergency contacts",
+          "Add a valid emergency contact phone number in Profile.",
+        );
         return;
       }
 
@@ -195,7 +211,10 @@ function HomePageContent() {
       const smsUrl = `sms:${first.phone}${queryPrefix}body=${encodeURIComponent(alertMessage)}`;
       const canOpen = await Linking.canOpenURL(smsUrl);
       if (!canOpen) {
-        Alert.alert("SMS unavailable", "Could not open Messages on this device.");
+        Alert.alert(
+          "SMS unavailable",
+          "Could not open Messages on this device.",
+        );
         return;
       }
       await Linking.openURL(smsUrl);
@@ -210,35 +229,35 @@ function HomePageContent() {
 
   return (
     <ImageBackground
-      source={require('@/assets/images/sipsafe.jpg')}
+      source={require("@/assets/images/background.png")}
       style={styles.fullScreenBg}
       resizeMode="cover"
     >
-      {/* Dark overlay to make text readable over the photo */}
-      <View style={styles.darkOverlay} />
-
-      {/* Top nav - Profile only */}
-      <View style={styles.nav}>
-        <View style={styles.navSpacer} />
-        <TouchableOpacity onPress={() => router.push("/profile")}>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
-            source={require('@/assets/images/logo-sipsafe.png')}
+            source={require("@/assets/images/logo-sipsafe.png")}
             style={styles.logoImage}
             resizeMode="contain"
           />
         </View>
 
-        {/* BAC display - no progress bar */}
+        {/* BAC display - centered inside cup image */}
         <View style={styles.bacContainer}>
-          <Text style={styles.bacValue}>{(bac ?? 0).toFixed(3)}%</Text>
-          <Text style={styles.bacLabel}>EST. BAC</Text>
+          <ImageBackground
+            source={require("@/assets/images/cup.png")}
+            style={styles.cupImage}
+            resizeMode="contain"
+          >
+            <View style={styles.bacTextOverlay}>
+              <Text style={styles.bacValue}>{(bac ?? 0).toFixed(3)}%</Text>
+              <Text style={styles.bacLabel}>EST. BAC</Text>
+            </View>
+          </ImageBackground>
         </View>
 
         {/* 4. CARDS */}
@@ -251,7 +270,10 @@ function HomePageContent() {
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.statCard, { backgroundColor: 'rgba(26,26,26,0.7)' }]}
+              style={[
+                styles.statCard,
+                { backgroundColor: "rgba(26,26,26,0.7)" },
+              ]}
               onPress={handleAlertFriend}
               activeOpacity={0.85}
             >
@@ -304,7 +326,7 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
+    <View style={{ flex: 1, backgroundColor: "#000" }}>
       <StatusBar barStyle="light-content" />
       <HomePageContent />
     </View>
@@ -313,98 +335,128 @@ export default function App() {
 
 const styles = StyleSheet.create({
   fullScreenBg: { flex: 1 },
-  darkOverlay: { 
-    ...StyleSheet.absoluteFillObject, 
-    backgroundColor: 'rgba(0,0,0,0.65)' // Adjust this to make sipsafe.jpg more or less visible
-  },
-  nav: { 
-    flexDirection: 'row', 
-    paddingHorizontal: 20, 
-    paddingTop: 60, 
-    alignItems: 'center', 
-    justifyContent: 'flex-end', 
-    zIndex: 10 
-  },
-  navSpacer: { flex: 1 },
-  navBtn: { color: '#aaa', fontSize: 20, fontFamily: 'BebasNeue' },
   body: { paddingHorizontal: 20, paddingBottom: 120 },
 
-  logoContainer: { 
-    marginTop: 20,
-    marginBottom: 100,
-    marginVertical: 40, 
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoContainer: {
+    marginTop: 100,
+    marginBottom: -120,
+    marginVertical: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  logoImage: { 
-    width: 240, 
-    height: 110,
+  logoImage: {
+    width: 480,
+    height: 220,
   },
 
-  bacContainer: { 
-    alignItems: 'center', 
-    marginBottom: 40,
-    paddingTop: 200,
+  bacContainer: {
+    alignItems: "center",
+    marginBottom: -100,
   },
-  bacValue: { 
-    color: '#fff', 
-    fontSize: 70, 
-    fontFamily: 'BebasNeue', 
-    letterSpacing: -2, 
-    lineHeight: 80, 
-    textShadowColor: 'rgba(255,64,0,0.8)', 
-    textShadowOffset: { width: 0, height: 0 }, 
-    textShadowRadius: 15 
+  cupImage: {
+    width: 600,
+    height: 720,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  bacLabel: { 
-    color: '#fff', 
-    fontSize: 22, 
-    fontFamily: 'BebasNeue', 
-    marginTop: -5, 
-    opacity: 0.9, 
-    letterSpacing: 6 
+  bacTextOverlay: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 232,
+    paddingBottom: 24,
+    marginLeft: 18,
+    marginRight: 0,
+  },
+  bacValue: {
+    color: "#fff",
+    fontSize: 60,
+    fontFamily: "BebasNeue",
+    letterSpacing: -2,
+    lineHeight: 80,
+    textShadowColor: "rgba(255,64,0,0.8)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 15,
+  },
+  bacLabel: {
+    color: "#fff",
+    fontSize: 20,
+    fontFamily: "BebasNeue",
+    marginTop: -16,
+    opacity: 0.9,
+    letterSpacing: 6,
   },
 
   actionButtonsWrapper: { marginTop: 10 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
-  statCard: { 
-    backgroundColor: 'rgba(20,20,20,0.75)', 
-    width: '48%', 
-    padding: 18, 
-    borderRadius: 0, 
-    height: 110, 
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)'
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
   },
-  cardTitle: { color: '#fff', fontSize: 24, fontFamily: 'BebasNeue', marginBottom: 2, letterSpacing: 1 },
-  cardValue: { color: '#999', fontSize: 18, fontFamily: 'BebasNeue', letterSpacing: 1 },
+  statCard: {
+    backgroundColor: "rgba(20,20,20,0.75)",
+    width: "48%",
+    padding: 18,
+    borderRadius: 0,
+    height: 110,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+  },
+  cardTitle: {
+    color: "#fff",
+    fontSize: 24,
+    fontFamily: "BebasNeue",
+    marginBottom: 2,
+    letterSpacing: 1,
+  },
+  cardValue: {
+    color: "#999",
+    fontSize: 18,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1,
+  },
 
-  chartCard: { 
-    backgroundColor: 'rgba(20,20,20,0.75)', 
-    borderRadius: 0, 
-    padding: 20, 
+  chartCard: {
+    backgroundColor: "rgba(20,20,20,0.75)",
+    borderRadius: 0,
+    padding: 20,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)'
+    borderColor: "rgba(255,255,255,0.05)",
   },
-  chartContainer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 80, paddingHorizontal: 5 },
-  chartColumn: { alignItems: 'center', flex: 1 },
+  chartContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    height: 80,
+    paddingHorizontal: 5,
+  },
+  chartColumn: { alignItems: "center", flex: 1 },
   bar: { width: 14, backgroundColor: THEME_COLOR, borderRadius: 2 },
-  barDayLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 10, marginTop: 4 },
-  chartCardHint: { color: THEME_COLOR, fontSize: 12, marginTop: 10, opacity: 0.9 },
+  barDayLabel: { color: "rgba(255,255,255,0.6)", fontSize: 10, marginTop: 4 },
+  chartCardHint: {
+    color: THEME_COLOR,
+    fontSize: 12,
+    marginTop: 10,
+    opacity: 0.9,
+  },
 
   receiptButton: {
-    backgroundColor: 'rgba(20,20,20,0.8)',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    backgroundColor: "rgba(20,20,20,0.8)",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 20,
     borderRadius: 0,
     marginBottom: 15,
     borderWidth: 1,
     borderColor: THEME_COLOR,
   },
-  receiptButtonText: { color: THEME_COLOR, fontSize: 22, fontFamily: 'BebasNeue', letterSpacing: 1 },
+  receiptButtonText: {
+    color: THEME_COLOR,
+    fontSize: 22,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1,
+  },
   receiptButtonArrow: { color: THEME_COLOR, fontSize: 24 },
 });
