@@ -24,32 +24,31 @@ import { BebasNeue_400Regular, useFonts } from '@expo-google-fonts/bebas-neue';
 import { SpecialElite_400Regular } from '@expo-google-fonts/special-elite';
 
 const THEME_COLOR = '#FF4000';
-const SAFE_STREAK_BAC_LIMIT = 0.15; // Safe streak counts days under this limit
+const SAFE_STREAK_BAC_LIMIT = 0.15; // Streak breaks when daily BAC >= this (today considered)
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 type LogEntry = { createdAt: string; estimatedBacContribution?: number };
 
-/** Compute consecutive days (ending yesterday) where daily BAC stayed under SAFE_STREAK_BAC_LIMIT. */
+function toLocalDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Safe streak considers today: 1 day if today's BAC < limit, 0 if today >= limit. */
 function computeSafeStreak(logs: LogEntry[]): number {
   const byDay = new Map<string, number>();
   for (const log of logs) {
-    const key = new Date(log.createdAt).toISOString().slice(0, 10);
+    const d = new Date(log.createdAt);
+    const key = toLocalDateKey(d);
     const cur = byDay.get(key) ?? 0;
     byDay.set(key, cur + (log.estimatedBacContribution ?? 0));
   }
-  let streak = 0;
-  const now = new Date();
-  for (let d = 1; d <= 365; d++) {
-    const day = new Date(now);
-    day.setDate(day.getDate() - d);
-    day.setHours(0, 0, 0, 0);
-    const key = day.toISOString().slice(0, 10);
-    const dayTotal = byDay.get(key) ?? 0;
-    if (dayTotal >= SAFE_STREAK_BAC_LIMIT) break;
-    streak += 1;
-  }
-  return streak;
+  const todayKey = toLocalDateKey(new Date());
+  const todayTotal = byDay.get(todayKey) ?? 0;
+  return todayTotal < SAFE_STREAK_BAC_LIMIT ? 1 : 0;
 }
 
 function HomePageContent() {
@@ -248,7 +247,7 @@ function HomePageContent() {
             <View style={styles.statCard}>
               <Text style={styles.cardTitle}>Safe Streak</Text>
               <Text style={styles.cardValue}>
-                {safeStreakDays} {safeStreakDays === 1 ? 'DAY' : 'DAYS'}
+                {`${safeStreakDays} ${safeStreakDays === 1 ? "DAY" : "DAYS"}`}
               </Text>
             </View>
             <TouchableOpacity
