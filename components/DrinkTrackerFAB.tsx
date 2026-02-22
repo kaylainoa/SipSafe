@@ -1187,6 +1187,13 @@ export default function DrinkTrackerFAB({
         ? "\n\n" + analysis.concerns.join("\n")
         : "";
       if (!analysis.safe) {
+        const voiceMsg =
+          "Possible tampering detected. " +
+          (analysis.concerns?.length
+            ? analysis.concerns.slice(0, 2).join(". ") + ". "
+            : "") +
+          "We did not add this drink. Get a new drink or a safe alternative.";
+        await speakText(voiceMsg);
         Alert.alert(
           "Scan: possible tampering",
           analysis.summary +
@@ -1202,6 +1209,11 @@ export default function DrinkTrackerFAB({
           /cloud|opaque|sediment|particle|unusual/i.test(c),
         )
       ) {
+        const voiceMsg =
+          "This drink should be clear. Possible tampering. " +
+          analysis.summary +
+          " We did not add this drink.";
+        await speakText(voiceMsg);
         Alert.alert(
           "Scan: possible tampering",
           "This drink should be clear (" +
@@ -1217,12 +1229,23 @@ export default function DrinkTrackerFAB({
       }
       await addDrink(mixedOption);
       setMixedEditorOpen(false);
+      const successVoice =
+        "Mixed drink looks safe. " +
+        mixedLiquor.label +
+        " plus " +
+        mixedMixer.label +
+        " logged. " +
+        estimatedStd.toFixed(1) +
+        " drinks. Stay safe.";
+      await speakText(successVoice);
       Alert.alert(
         "Mixed drink logged",
         `${mixedLiquor.label} + ${mixedMixer.label} • Strength ${mixedStrength}% • ${estimatedStd.toFixed(2)} drinks. Stay safe.`,
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Scan failed.";
+      const errorVoice = "Scan failed. Drink was not added. You can add it manually or try again.";
+      await speakText(errorVoice).catch(() => {});
       Alert.alert(
         "Scan error",
         msg + " Drink was not added. You can add it manually or try again.",
