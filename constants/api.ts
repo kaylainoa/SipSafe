@@ -19,7 +19,12 @@ async function request(endpoint: string, options: any = {}) {
       ...options.headers,
     },
   });
-  return response.json();
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const msg = typeof data?.error === "string" ? data.error : `Request failed (${response.status})`;
+    throw new Error(msg);
+  }
+  return data;
 }
 
 export const api = {
@@ -31,6 +36,14 @@ export const api = {
     }),
   login: (data: any) =>
     request("/api/auth/login", { method: "POST", body: JSON.stringify(data) }),
+
+  // Current user (profile + drink tracking)
+  getMe: () => request("/api/auth/me"),
+  updateProfile: (profile: Record<string, unknown>) =>
+    request("/api/auth/me", {
+      method: "PATCH",
+      body: JSON.stringify({ profile }),
+    }),
 
   // Drinks
   getDrinks: () => request("/api/drinks"),

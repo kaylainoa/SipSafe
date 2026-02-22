@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
-const authRoutes = require("./routes/drinklogs");
+const authRoutes = require("./routes/auth");
 const drinkRoutes = require("./routes/drinks");
 const drinkLogRoutes = require("./routes/drinklogs");
 const identifyDrinkRoutes = require("./routes/identifyDrink");

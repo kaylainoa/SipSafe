@@ -32,9 +32,14 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
+    if (!fontsLoaded && !fontError) return;
+    // Small delay so native splash is registered before we hide it
+    const t = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {
+        // Ignore "no native splash registered" on some iOS view controllers
+      });
+    }, 100);
+    return () => clearTimeout(t);
   }, [fontsLoaded, fontError]);
 
   // Don't render the app until fonts are ready

@@ -24,6 +24,13 @@ const userSchema = new mongoose.Schema(
         required: true,
       },
       dateOfBirth: { type: Date },
+      cell: { type: String, default: "" },
+      address: { type: String, default: "" },
+      bloodType: { type: String, default: "" },
+      emergencyContacts: [{
+        label: { type: String, default: "" },
+        phone: { type: String, default: "" },
+      }],
     },
   },
   { timestamps: true },

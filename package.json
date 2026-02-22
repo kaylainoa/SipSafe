@@ -11,11 +11,13 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@expo-google-fonts/bebas-neue": "^0.4.1",
     "@expo-google-fonts/instrument-sans": "^0.4.2",
     "@expo-google-fonts/instrument-serif": "^0.4.1",
     "@expo-google-fonts/rubik": "^0.4.2",
     "@expo-google-fonts/rubik-glitch": "^0.4.0",
     "@expo-google-fonts/rubik-spray-paint": "^0.4.0",
+    "@expo-google-fonts/special-elite": "^0.4.1",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
