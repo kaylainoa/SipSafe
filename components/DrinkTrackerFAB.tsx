@@ -38,8 +38,8 @@ import { DrinkEntry, useDrinkContext } from "@/contexts/DrinkContext";
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
 import { speakText } from "@/lib/elevenlabsTTS";
 import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -122,7 +122,6 @@ const LIQUOR_OPTIONS: LiquorOption[] = [
 
 type MixerOption = { label: string; expectClear: boolean };
 const MIXER_OPTIONS: MixerOption[] = [
-  { label: "WATER", expectClear: true },
   { label: "SODA", expectClear: true },
   { label: "TONIC", expectClear: true },
   { label: "SELTZER", expectClear: true },
@@ -353,7 +352,7 @@ const gS = StyleSheet.create({
   },
   bacLabel: {
     color: C.muted,
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: MONO,
     letterSpacing: 2.5,
     marginBottom: 4,
@@ -790,14 +789,24 @@ export default function DrinkTrackerFAB({
           ? data
           : (data as { drinks?: unknown[] })?.drinks;
         if (!Array.isArray(list)) return;
-        const options: DrinkOption[] = list.map((d: any) => ({
-          id: d._id,
-          label: d.name ?? "Drink",
-          emoji: CATEGORY_EMOJI[String(d.category ?? "").toLowerCase()] ?? "glass-cocktail",
-          standardDrinks:
-            typeof d.standardDrinks === "number" ? d.standardDrinks : 1,
-          abv: typeof d.abv === "number" ? d.abv : 5,
-        }));
+        const options: DrinkOption[] = list
+          .filter((d: any) => {
+            const name = String(d.name ?? "").toUpperCase().trim();
+            const abv = typeof d.abv === "number" ? d.abv : 5;
+            if (abv === 0 || name.startsWith("WATER")) return false;
+            return true;
+          })
+          .map((d: any) => {
+            const abv = typeof d.abv === "number" ? d.abv : 5;
+            const rawStd = typeof d.standardDrinks === "number" ? d.standardDrinks : 1;
+            return {
+              id: d._id,
+              label: d.name ?? "Drink",
+              emoji: CATEGORY_EMOJI[String(d.category ?? "").toLowerCase()] ?? "glass-cocktail",
+              standardDrinks: rawStd,
+              abv,
+            };
+          });
         if (!cancelled) setDrinkOptionsFromApi(options);
       } catch {
         if (!cancelled) setDrinkOptionsFromApi([]);
@@ -815,11 +824,15 @@ export default function DrinkTrackerFAB({
 
   const addDrink = useCallback(
     async (dt: DrinkOption) => {
+      const isNonAlcoholic =
+        dt.abv === 0 ||
+        String(dt.label ?? "").toUpperCase().trim().startsWith("WATER");
+      const standardDrinks = isNonAlcoholic ? 0 : dt.standardDrinks;
       const entry: DrinkEntry = {
         id: Date.now().toString(),
         type: dt.label,
         emoji: dt.emoji,
-        standardDrinks: dt.standardDrinks,
+        standardDrinks,
         timestamp: new Date(),
       };
       try {
@@ -1376,7 +1389,7 @@ export default function DrinkTrackerFAB({
             </TouchableOpacity>
             {mixedEditorOpen && (
               <View style={shS.mixedPanel}>
-                <Text style={shS.mixedTitle}>WHAT'S THE MIXER?</Text>
+                <Text style={shS.mixedTitle}>{"WHAT'S THE MIXER?"}</Text>
                 <View style={shS.mixedLiquorGrid}>
                   {MIXER_OPTIONS.map((opt) => {
                     const selected = opt.label === mixedMixer.label;
@@ -1402,7 +1415,7 @@ export default function DrinkTrackerFAB({
                     );
                   })}
                 </View>
-                <Text style={shS.mixedTitle}>WHAT'S THE LIQUOR?</Text>
+                <Text style={shS.mixedTitle}>{"WHAT'S THE LIQUOR?"}</Text>
                 <View style={shS.mixedLiquorGrid}>
                   {LIQUOR_OPTIONS.map((opt) => {
                     const selected = opt.label === mixedLiquor.label;
@@ -1702,6 +1715,8 @@ const shS = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 1.5,
   },
+  inlineBtnRow: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
+  inlineBtnIcon: { marginRight: 8 },
   mixedBtn: {
     backgroundColor: "#161210",
     borderWidth: 1.5,
@@ -1718,8 +1733,6 @@ const shS = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 1.5,
   },
-  inlineBtnRow: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
-  inlineBtnIcon: { marginRight: 8 },
   mixedPanel: {
     backgroundColor: "rgba(17,17,17,0.92)",
     borderWidth: 1,

@@ -4,8 +4,10 @@ const Drink = require("../models/Drink");
 
 // US standard drink ≈ 14g ethanol; ethanol ≈ 0.789 g/ml
 // standardDrinks = (standardServingMl * abv/100 * 0.789) / 14
+// Non-alcoholic (abv 0) = 0 standard drinks so Water never increases BAC
 function standardDrinksFromServing(standardServingMl, abv) {
-  if (!standardServingMl || !abv) return 1;
+  if (abv == null || abv === 0) return 0;
+  if (!standardServingMl) return 1;
   const gramsEthanol = standardServingMl * (abv / 100) * 0.789;
   return Math.round((gramsEthanol / 14) * 100) / 100;
 }
