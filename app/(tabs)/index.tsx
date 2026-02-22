@@ -163,7 +163,7 @@ function HomePageContent() {
             }))
             .filter((c: Contact) => c.label.length > 0 && c.phone.length > 0);
         }
-      } catch {[]
+      } catch {
         // fallback to cache
       }
 
@@ -172,7 +172,7 @@ function HomePageContent() {
         if (rawUser) {
           const parsed = JSON.parse(rawUser) as {
             profile?: {
-              emergencyContacts?: Array<{ label?: string; phone?: string }>;
+              emergencyContacts?: { label?: string; phone?: string }[];
             };
           };
           if (Array.isArray(parsed?.profile?.emergencyContacts)) {
@@ -229,21 +229,10 @@ function HomePageContent() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/sipsafe.jpg")}
+      source={require("@/assets/images/background.png")}
       style={styles.fullScreenBg}
       resizeMode="cover"
     >
-      {/* Dark overlay to make text readable over the photo */}
-      <View style={styles.darkOverlay} />
-
-      {/* Top nav - Profile only */}
-      <View style={styles.nav}>
-        <View style={styles.navSpacer} />
-        <TouchableOpacity
-          onPress={() => router.push("/profile")}
-        ></TouchableOpacity>
-      </View>
-
       <ScrollView
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
@@ -257,10 +246,18 @@ function HomePageContent() {
           />
         </View>
 
-        {/* BAC display - no progress bar */}
+        {/* BAC display - centered inside cup image */}
         <View style={styles.bacContainer}>
-          <Text style={styles.bacValue}>{(bac ?? 0).toFixed(3)}%</Text>
-          <Text style={styles.bacLabel}>EST. BAC</Text>
+          <ImageBackground
+            source={require("@/assets/images/cup.png")}
+            style={styles.cupImage}
+            resizeMode="contain"
+          >
+            <View style={styles.bacTextOverlay}>
+              <Text style={styles.bacValue}>{(bac ?? 0).toFixed(3)}%</Text>
+              <Text style={styles.bacLabel}>EST. BAC</Text>
+            </View>
+          </ImageBackground>
         </View>
 
         {/* 4. CARDS */}
@@ -338,25 +335,11 @@ export default function App() {
 
 const styles = StyleSheet.create({
   fullScreenBg: { flex: 1 },
-  darkOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.65)", // Adjust this to make sipsafe.jpg more or less visible
-  },
-  nav: {
-    flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    zIndex: 10,
-  },
-  navSpacer: { flex: 1 },
-  navBtn: { color: "#aaa", fontSize: 20, fontFamily: "BebasNeue" },
   body: { paddingHorizontal: 20, paddingBottom: 120 },
 
   logoContainer: {
-    marginTop: 20,
-    marginBottom: 100,
+    marginTop: 100,
+    marginBottom: -120,
     marginVertical: 40,
     alignItems: "center",
     justifyContent: "center",
@@ -368,12 +351,25 @@ const styles = StyleSheet.create({
 
   bacContainer: {
     alignItems: "center",
-    marginBottom: 40,
-    paddingTop: 200,
+    marginBottom: -100,
+  },
+  cupImage: {
+    width: 600,
+    height: 720,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  bacTextOverlay: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 232,
+    paddingBottom: 24,
+    marginLeft: 18,
+    marginRight: 0,
   },
   bacValue: {
     color: "#fff",
-    fontSize: 70,
+    fontSize: 60,
     fontFamily: "BebasNeue",
     letterSpacing: -2,
     lineHeight: 80,
@@ -383,9 +379,9 @@ const styles = StyleSheet.create({
   },
   bacLabel: {
     color: "#fff",
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: "BebasNeue",
-    marginTop: -5,
+    marginTop: -16,
     opacity: 0.9,
     letterSpacing: 6,
   },
