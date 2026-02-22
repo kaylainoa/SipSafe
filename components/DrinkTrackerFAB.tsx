@@ -33,7 +33,6 @@
  */
 
 import { AddIcon } from "@/components/AddIcon";
-import { StopIcon } from "@/components/StopIcon";
 import { api } from "@/constants/api";
 import { DrinkEntry, useDrinkContext } from "@/contexts/DrinkContext";
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
@@ -48,6 +47,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Image,
   Linking,
   Modal,
   PanResponder,
@@ -768,11 +768,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
               <Text style={[fabS.badgeTxt, { color: isDanger ? C.red : C.redDark }]}>{(bac ?? 0).toFixed(2)}</Text>
             </View>
           )}
-          {(bac ?? 0) >= 0.15 ? (
-            <StopIcon width={40} color="#ff4000" />
-          ) : (
-            <AddIcon width={40} color="#ff4000" />
-          )}
+          <AddIcon width={40} color="#ff4000" />
         </TouchableOpacity>
       </Animated.View>
 
@@ -789,11 +785,22 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
             <View style={shS.handle} />
             <Text style={shS.handleHint}>drag to close</Text>
           </View>
+          {/* ─── UPDATED HEADER WITH IMAGE ASSET ─── */}
           <View style={shS.header}>
-            <View>
-              <Text style={shS.title}>SIP<Text style={{ color: C.red }}>SAFE</Text><Text style={shS.titleSub}> TRACKER</Text></Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Image 
+                source={require("@/assets/images/logo-sipsafe.png")} 
+                style={{ 
+                  width: 100, 
+                  height: 50, 
+                  resizeMode: "contain" 
+                }} 
+              />
             </View>
-            <TouchableOpacity style={shS.endBtn} onPress={endSession}><Text style={shS.endBtnTxt}>END</Text></TouchableOpacity>
+            
+            <TouchableOpacity style={shS.endBtn} onPress={endSession}>
+              <Text style={shS.endBtnTxt}>END</Text>
+            </TouchableOpacity>
           </View>
           <View style={shS.ticker}>
             <Text style={shS.tickerTxt} numberOfLines={1}>
