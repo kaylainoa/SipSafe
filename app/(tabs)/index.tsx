@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     zIndex: 10 
   },
   navSpacer: { flex: 1 },
-  navBtn: { color: '#aaa', fontSize: 14, fontFamily: 'BebasNeue' },
+  navBtn: { color: '#aaa', fontSize: 20, fontFamily: 'BebasNeue' },
   body: { paddingHorizontal: 20, paddingBottom: 120 },
 
   logoContainer: { 
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(20,20,20,0.75)', 
     width: '48%', 
     padding: 18, 
-    borderRadius: 20, 
+    borderRadius: 0, 
     height: 110, 
     justifyContent: 'center',
     borderWidth: 1,
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
 
   chartCard: { 
     backgroundColor: 'rgba(20,20,20,0.75)', 
-    borderRadius: 25, 
+    borderRadius: 0, 
     padding: 20, 
     marginBottom: 15,
     borderWidth: 1,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   },
   chartContainer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 80, paddingHorizontal: 5 },
   chartColumn: { alignItems: 'center', flex: 1 },
-  bar: { width: 14, backgroundColor: THEME_COLOR, borderRadius: 2 },
+  bar: { width: 14, backgroundColor: THEME_COLOR, borderRadius: 0 },
 
   receiptButton: {
     backgroundColor: 'rgba(20,20,20,0.8)',
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    borderRadius: 20,
+    borderRadius: 0,
     marginBottom: 15,
     borderWidth: 1,
     borderColor: THEME_COLOR,
