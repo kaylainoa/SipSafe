@@ -76,7 +76,7 @@ const C = {
   text: "#F0EBE1",
   muted: "#6B5E52",
 };
-const MONO = Platform.OS === "ios" ? "Courier New" : "monospace";
+const MONO = "BebasNeue";
 
 // ─── Drink types (static + from API) ──────────────────────────────────────────
 type DrinkOption = {
@@ -249,18 +249,18 @@ const BACGauge = ({ bac }: { bac: number }) => {
 const gS = StyleSheet.create({
   wrap: { backgroundColor: C.surface, borderRadius: 2, borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 12 },
   topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
-  bacLabel: { color: C.muted, fontSize: 9, fontFamily: MONO, letterSpacing: 2.5, marginBottom: 4 },
-  bacNum: { fontSize: 48, fontFamily: MONO, fontWeight: "900", letterSpacing: -2, lineHeight: 48 },
-  bacPct: { fontSize: 18, fontWeight: "400", letterSpacing: 0 },
+  bacLabel: { color: C.muted, fontSize: 12, fontFamily: MONO, letterSpacing: 2.5, marginBottom: 4 },
+  bacNum: { fontSize: 52, fontFamily: MONO, fontWeight: "900", letterSpacing: -2, lineHeight: 52 },
+  bacPct: { fontSize: 20, fontWeight: "400", letterSpacing: 0 },
   badge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 2, borderWidth: 1.5, marginTop: 4 },
-  badgeTxt: { fontSize: 11, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
+  badgeTxt: { fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
   track: { height: 12, backgroundColor: C.surfaceAlt, borderRadius: 1, overflow: "visible", marginBottom: 5, position: "relative", borderWidth: 1, borderColor: C.border },
   fill: { height: "100%", borderRadius: 1, position: "absolute", left: 0, opacity: 0.9 },
   tick: { position: "absolute", top: -4, width: 2, height: 20, backgroundColor: C.bg },
   zoneRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  zoneLbl: { fontSize: 8, fontFamily: MONO, letterSpacing: 1.5, fontWeight: "900" },
+  zoneLbl: { fontSize: 11, fontFamily: MONO, letterSpacing: 1.5, fontWeight: "900" },
   advice: { borderWidth: 1, borderRadius: 2, padding: 10 },
-  adviceTxt: { fontSize: 11, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
+  adviceTxt: { fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
 });
 
 const StatBox = ({ label, value, color }: { label: string; value: string; color?: string }) => (
@@ -271,8 +271,8 @@ const StatBox = ({ label, value, color }: { label: string; value: string; color?
 );
 const stS = StyleSheet.create({
   box: { flex: 1, alignItems: "center", backgroundColor: C.surface, borderRadius: 2, paddingVertical: 12, borderWidth: 1, borderColor: C.border },
-  val: { color: C.text, fontSize: 20, fontFamily: MONO, fontWeight: "900" },
-  lbl: { color: C.muted, fontSize: 8, fontFamily: MONO, marginTop: 4, letterSpacing: 2, textAlign: "center" },
+  val: { color: C.text, fontSize: 24, fontFamily: MONO, fontWeight: "900" },
+  lbl: { color: C.muted, fontSize: 11, fontFamily: MONO, marginTop: 4, letterSpacing: 2, textAlign: "center" },
 });
 
 const DangerBanner = ({ onAlert }: { onAlert: () => void }) => (
@@ -290,8 +290,8 @@ const DangerBanner = ({ onAlert }: { onAlert: () => void }) => (
 const bnS = StyleSheet.create({
   wrap: { flexDirection: "row", alignItems: "center", backgroundColor: C.redDark, borderRadius: 2, padding: 14, marginBottom: 12, gap: 12, borderWidth: 1.5, borderColor: C.red, borderStyle: "dashed" },
   skull: { fontSize: 26, color: C.paper },
-  title: { color: C.paper, fontSize: 13, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
-  sub: { color: "#FFB3B3", fontSize: 9, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
+  title: { color: C.paper, fontSize: 15, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
+  sub: { color: "#FFB3B3", fontSize: 12, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
   arrow: { color: C.paper, fontSize: 22 },
 });
 
@@ -307,8 +307,8 @@ const WaterNudge = ({ onDismiss }: { onDismiss: () => void }) => (
 const wS = StyleSheet.create({
   wrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#0A1520", borderWidth: 1, borderColor: "#2A4A6A", borderStyle: "dashed", borderRadius: 2, padding: 12, marginBottom: 12, gap: 10 },
   icon: { fontSize: 16 },
-  text: { flex: 1, color: "#7EB8D8", fontSize: 9, fontFamily: MONO, letterSpacing: 1, lineHeight: 14 },
-  ok: { color: "#7EB8D8", fontSize: 11, fontFamily: MONO, fontWeight: "900", letterSpacing: 2, paddingLeft: 6 },
+  text: { flex: 1, color: "#7EB8D8", fontSize: 12, fontFamily: MONO, letterSpacing: 1, lineHeight: 17 },
+  ok: { color: "#7EB8D8", fontSize: 13, fontFamily: MONO, fontWeight: "900", letterSpacing: 2, paddingLeft: 6 },
 });
 
 const DrinkLogItem = ({ entry, onRemove }: { entry: DrinkEntry; onRemove: () => void }) => {
@@ -331,9 +331,9 @@ const liS = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", paddingVertical: 11, paddingHorizontal: 12, backgroundColor: C.surfaceAlt, borderRadius: 2, marginBottom: 6, gap: 10, borderLeftWidth: 3, borderLeftColor: C.red },
   emoji: { fontSize: 20 },
   info: { flex: 1 },
-  name: { color: C.text, fontSize: 12, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
-  time: { color: C.muted, fontSize: 9, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
-  x: { color: C.muted, fontSize: 13 },
+  name: { color: C.text, fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
+  time: { color: C.muted, fontSize: 12, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
+  x: { color: C.muted, fontSize: 15 },
 });
 
 const Divider = ({ label }: { label: string }) => (
@@ -346,7 +346,7 @@ const Divider = ({ label }: { label: string }) => (
 const dvS = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 14 },
   line: { flex: 1, height: 1, backgroundColor: C.border },
-  lbl: { color: C.muted, fontSize: 9, fontFamily: MONO, letterSpacing: 3, fontWeight: "900" },
+  lbl: { color: C.muted, fontSize: 12, fontFamily: MONO, letterSpacing: 3, fontWeight: "900" },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -799,11 +799,11 @@ const fabS = StyleSheet.create({
     shadowRadius: 16,
     elevation: 15,
   },
-  label: { 
+  label: {
     color: "#F0EBE1", 
-    fontSize: 16, 
-    fontFamily: "RubikSprayPaint", 
-    letterSpacing: 1, 
+    fontSize: 18, 
+    fontFamily: "BebasNeue", 
+    letterSpacing: 1.4, 
     textAlign: 'center' 
   },
   badge: { 
@@ -819,8 +819,8 @@ const fabS = StyleSheet.create({
     borderColor: "#ff4000", 
     zIndex: 1 
   },
-  badgeTxt: { 
-    fontSize: 11, 
+  badgeTxt: {
+    fontSize: 14,
     fontFamily: MONO, 
     fontWeight: "900" 
   },
@@ -829,35 +829,35 @@ const fabS = StyleSheet.create({
 const shS = StyleSheet.create({
   overlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.72)" },
   verifyingOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 1000, alignItems: "center", justifyContent: "center" },
-  verifyingTxt: { color: "#ff4000", fontSize: 11, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
+  verifyingTxt: { color: "#ff4000", fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
   sheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#0E0B09", borderTopLeftRadius: 4, borderTopRightRadius: 4, borderTopWidth: 2, borderTopColor: "#ff4000", maxHeight: "90%" },
   handleRow: { alignItems: "center", paddingTop: 10, paddingBottom: 2 },
   handle: { width: 36, height: 3, backgroundColor: "#2C2520", borderRadius: 2 },
-  handleHint: { color: "#2C2520", fontSize: 8, fontFamily: MONO, letterSpacing: 2 },
+  handleHint: { color: "#2C2520", fontSize: 11, fontFamily: MONO, letterSpacing: 2 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12 },
-  eyebrow: { color: "#6B5E52", fontSize: 9, fontFamily: MONO, letterSpacing: 2 },
-  title: { color: "#F0EBE1", fontSize: 20, fontFamily: MONO, fontWeight: "900", letterSpacing: 3 },
-  titleSub: { color: "#6B5E52", fontSize: 13, fontWeight: "400" },
+  eyebrow: { color: "#6B5E52", fontSize: 12, fontFamily: MONO, letterSpacing: 2 },
+  title: { color: "#F0EBE1", fontSize: 24, fontFamily: MONO, fontWeight: "900", letterSpacing: 3 },
+  titleSub: { color: "#6B5E52", fontSize: 15, fontWeight: "400" },
   endBtn: { borderWidth: 1.5, borderColor: "#2C2520", borderRadius: 2, paddingHorizontal: 14, paddingVertical: 8 },
-  endBtnTxt: { color: "#6B5E52", fontSize: 10, fontFamily: MONO, fontWeight: "900" },
+  endBtnTxt: { color: "#6B5E52", fontSize: 13, fontFamily: MONO, fontWeight: "900" },
   ticker: { backgroundColor: "#ff4000", paddingVertical: 5, paddingHorizontal: 14 },
-  tickerTxt: { color: "#F0EBE1", fontSize: 9, fontFamily: MONO, fontWeight: "700" },
+  tickerTxt: { color: "#F0EBE1", fontSize: 12, fontFamily: MONO, fontWeight: "700" },
   scroll: { flex: 1 },
   content: { padding: 14 },
   searchWrap: { marginBottom: 12 },
-  searchInput: { backgroundColor: "#1E1A17", borderWidth: 1, borderColor: "#2C2520", borderRadius: 2, paddingHorizontal: 14, paddingVertical: 12, color: "#F0EBE1", fontSize: 14, fontFamily: MONO },
+  searchInput: { backgroundColor: "#1E1A17", borderWidth: 1, borderColor: "#2C2520", borderRadius: 2, paddingHorizontal: 14, paddingVertical: 12, color: "#F0EBE1", fontSize: 16, fontFamily: MONO },
   gridViewport: { maxHeight: 260, marginBottom: 14 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
   drinkBtn: { width: (SW - 52) / 3, backgroundColor: "#161210", borderRadius: 2, borderWidth: 1, borderColor: "#2C2520", alignItems: "center", paddingVertical: 14 },
   drinkEmoji: { fontSize: 24, marginBottom: 5 },
-  drinkName: { color: "#F0EBE1", fontSize: 9, fontFamily: MONO, fontWeight: "900", textAlign: "center" },
+  drinkName: { color: "#F0EBE1", fontSize: 12, fontFamily: MONO, fontWeight: "900", textAlign: "center" },
   alertBtn: { backgroundColor: "#161210", borderWidth: 1.5, borderColor: "#ff4000", borderRadius: 2, paddingVertical: 15, alignItems: "center" },
-  alertBtnTxt: { color: "#ff4000", fontSize: 12, fontFamily: MONO, fontWeight: "900", letterSpacing: 2.5 },
+  alertBtnTxt: { color: "#ff4000", fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2.5 },
   logSection: { marginTop: 12, backgroundColor: "#161210", borderWidth: 1, borderColor: "#2C2520", borderRadius: 2, padding: 12 },
-  logTitle: { color: "#F0EBE1", fontSize: 10, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5, marginBottom: 8 },
-  logEmpty: { color: "#6B5E52", fontSize: 10, fontFamily: MONO },
+  logTitle: { color: "#F0EBE1", fontSize: 13, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5, marginBottom: 8 },
+  logEmpty: { color: "#6B5E52", fontSize: 13, fontFamily: MONO },
   logRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: "#2C2520" },
-  logDrink: { color: "#F0EBE1", fontSize: 10, fontFamily: MONO, fontWeight: "700" },
-  logBac: { color: "#ff4000", fontSize: 10, fontFamily: MONO, fontWeight: "900" },
-  disclaimer: { color: "#2C2520", fontSize: 8, fontFamily: MONO, textAlign: "center", marginTop: 20 },
+  logDrink: { color: "#F0EBE1", fontSize: 13, fontFamily: MONO, fontWeight: "700" },
+  logBac: { color: "#ff4000", fontSize: 13, fontFamily: MONO, fontWeight: "900" },
+  disclaimer: { color: "#2C2520", fontSize: 11, fontFamily: MONO, textAlign: "center", marginTop: 20 },
 });
