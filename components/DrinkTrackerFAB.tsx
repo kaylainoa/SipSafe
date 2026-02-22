@@ -143,16 +143,34 @@ function resolveDetectedDrinkOption(
   );
   if (byDirectLabel) return byDirectLabel;
 
-  if (normalized.includes("beer") || normalized.includes("lager") || normalized.includes("ipa")) {
+  if (
+    normalized.includes("beer") ||
+    normalized.includes("lager") ||
+    normalized.includes("ipa")
+  ) {
     return options.find((o) => o.label === "BEER") ?? null;
   }
-  if (normalized.includes("wine") || normalized.includes("chardonnay") || normalized.includes("merlot")) {
+  if (
+    normalized.includes("wine") ||
+    normalized.includes("chardonnay") ||
+    normalized.includes("merlot")
+  ) {
     return options.find((o) => o.label === "WINE") ?? null;
   }
-  if (normalized.includes("shot") || normalized.includes("whiskey") || normalized.includes("vodka") || normalized.includes("tequila") || normalized.includes("spirit")) {
+  if (
+    normalized.includes("shot") ||
+    normalized.includes("whiskey") ||
+    normalized.includes("vodka") ||
+    normalized.includes("tequila") ||
+    normalized.includes("spirit")
+  ) {
     return options.find((o) => o.label === "SHOT") ?? null;
   }
-  if (normalized.includes("cocktail") || normalized.includes("mixed") || normalized.includes("solo cup")) {
+  if (
+    normalized.includes("cocktail") ||
+    normalized.includes("mixed") ||
+    normalized.includes("solo cup")
+  ) {
     return options.find((o) => o.label === "COCKTAIL") ?? null;
   }
   if (normalized.includes("seltzer") || normalized.includes("hard seltzer")) {
@@ -185,7 +203,10 @@ function labelToCategory(label: string): string {
   return "cocktail";
 }
 
-function volumeMlFromStandardDrinks(standardDrinks: number, abv: number): number {
+function volumeMlFromStandardDrinks(
+  standardDrinks: number,
+  abv: number,
+): number {
   if (!abv) return 355;
   return Math.round((standardDrinks * 14 * 100) / (0.789 * abv));
 }
@@ -251,7 +272,12 @@ const BACGauge = ({ bac }: { bac: number }) => {
   const fillPct = Math.min(b / 0.2, 1);
 
   return (
-    <View style={[ gS.wrap, b >= BAC_DANGER && { borderColor: C.red, borderWidth: 2 } ]}>
+    <View
+      style={[
+        gS.wrap,
+        b >= BAC_DANGER && { borderColor: C.red, borderWidth: 2 },
+      ]}
+    >
       <View style={gS.topRow}>
         <View>
           <Text style={gS.bacLabel}>BLOOD ALCOHOL CONTENT</Text>
@@ -260,57 +286,175 @@ const BACGauge = ({ bac }: { bac: number }) => {
             <Text style={gS.bacPct}>%</Text>
           </Text>
         </View>
-        <View style={[ gS.badge, { backgroundColor: status.bg, borderColor: status.color } ]}>
-          <Text style={[gS.badgeTxt, { color: status.color }]}>{status.label}</Text>
+        <View
+          style={[
+            gS.badge,
+            { backgroundColor: status.bg, borderColor: status.color },
+          ]}
+        >
+          <Text style={[gS.badgeTxt, { color: status.color }]}>
+            {status.label}
+          </Text>
         </View>
       </View>
       <View style={[gS.track, { width: trackW }]}>
-        <View style={[ gS.fill, { width: fillPct * trackW, backgroundColor: status.color } ]} />
+        <View
+          style={[
+            gS.fill,
+            { width: fillPct * trackW, backgroundColor: status.color },
+          ]}
+        />
         {[BAC_SAFE, BAC_CAUTION, BAC_DANGER].map((v) => (
           <View key={v} style={[gS.tick, { left: (v / 0.2) * trackW }]} />
         ))}
       </View>
       <View style={gS.zoneRow}>
         {["SAFE", "CAUTION", "HIGH", "DANGER"].map((z, i) => (
-          <Text key={z} style={[ gS.zoneLbl, { color: [C.safe, C.caution, C.red, C.red][i] } ]}>
+          <Text
+            key={z}
+            style={[
+              gS.zoneLbl,
+              { color: [C.safe, C.caution, C.red, C.red][i] },
+            ]}
+          >
             {z}
           </Text>
         ))}
       </View>
-      <View style={[ gS.advice, { backgroundColor: status.bg, borderColor: status.color } ]}>
-        <Text style={[gS.adviceTxt, { color: status.color }]}>{status.advice}</Text>
+      <View
+        style={[
+          gS.advice,
+          { backgroundColor: status.bg, borderColor: status.color },
+        ]}
+      >
+        <Text style={[gS.adviceTxt, { color: status.color }]}>
+          {status.advice}
+        </Text>
       </View>
     </View>
   );
 };
 
 const gS = StyleSheet.create({
-  wrap: { backgroundColor: C.surface, borderRadius: 2, borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 12 },
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
-  bacLabel: { color: C.muted, fontSize: 12, fontFamily: MONO, letterSpacing: 2.5, marginBottom: 4 },
-  bacNum: { fontSize: 52, fontFamily: MONO, fontWeight: "900", letterSpacing: -2, lineHeight: 52 },
+  wrap: {
+    backgroundColor: C.surface,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 16,
+    marginBottom: 12,
+  },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 14,
+  },
+  bacLabel: {
+    color: C.muted,
+    fontSize: 12,
+    fontFamily: MONO,
+    letterSpacing: 2.5,
+    marginBottom: 4,
+  },
+  bacNum: {
+    fontSize: 52,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: -2,
+    lineHeight: 52,
+  },
   bacPct: { fontSize: 20, fontWeight: "400", letterSpacing: 0 },
-  badge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 2, borderWidth: 1.5, marginTop: 4 },
-  badgeTxt: { fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
-  track: { height: 12, backgroundColor: C.surfaceAlt, borderRadius: 1, overflow: "visible", marginBottom: 5, position: "relative", borderWidth: 1, borderColor: C.border },
-  fill: { height: "100%", borderRadius: 1, position: "absolute", left: 0, opacity: 0.9 },
-  tick: { position: "absolute", top: -4, width: 2, height: 20, backgroundColor: C.bg },
-  zoneRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  zoneLbl: { fontSize: 11, fontFamily: MONO, letterSpacing: 1.5, fontWeight: "900" },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 2,
+    borderWidth: 1.5,
+    marginTop: 4,
+  },
+  badgeTxt: {
+    fontSize: 14,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 2,
+  },
+  track: {
+    height: 12,
+    backgroundColor: C.surfaceAlt,
+    borderRadius: 1,
+    overflow: "visible",
+    marginBottom: 5,
+    position: "relative",
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  fill: {
+    height: "100%",
+    borderRadius: 1,
+    position: "absolute",
+    left: 0,
+    opacity: 0.9,
+  },
+  tick: {
+    position: "absolute",
+    top: -4,
+    width: 2,
+    height: 20,
+    backgroundColor: C.bg,
+  },
+  zoneRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  zoneLbl: {
+    fontSize: 11,
+    fontFamily: MONO,
+    letterSpacing: 1.5,
+    fontWeight: "900",
+  },
   advice: { borderWidth: 1, borderRadius: 2, padding: 10 },
-  adviceTxt: { fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
+  adviceTxt: {
+    fontSize: 14,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+  },
 });
 
-const StatBox = ({ label, value, color }: { label: string; value: string; color?: string }) => (
+const StatBox = ({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+}) => (
   <View style={stS.box}>
     <Text style={[stS.val, color ? { color } : {}]}>{value}</Text>
     <Text style={stS.lbl}>{label}</Text>
   </View>
 );
 const stS = StyleSheet.create({
-  box: { flex: 1, alignItems: "center", backgroundColor: C.surface, borderRadius: 2, paddingVertical: 12, borderWidth: 1, borderColor: C.border },
+  box: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: C.surface,
+    borderRadius: 2,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
   val: { color: C.text, fontSize: 24, fontFamily: MONO, fontWeight: "900" },
-  lbl: { color: C.muted, fontSize: 11, fontFamily: MONO, marginTop: 4, letterSpacing: 2, textAlign: "center" },
+  lbl: {
+    color: C.muted,
+    fontSize: 11,
+    fontFamily: MONO,
+    marginTop: 4,
+    letterSpacing: 2,
+    textAlign: "center",
+  },
 });
 
 const DangerBanner = ({ onAlert }: { onAlert: () => void }) => (
@@ -326,51 +470,140 @@ const DangerBanner = ({ onAlert }: { onAlert: () => void }) => (
   </TouchableOpacity>
 );
 const bnS = StyleSheet.create({
-  wrap: { flexDirection: "row", alignItems: "center", backgroundColor: C.redDark, borderRadius: 2, padding: 14, marginBottom: 12, gap: 12, borderWidth: 1.5, borderColor: C.red, borderStyle: "dashed" },
+  wrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: C.redDark,
+    borderRadius: 2,
+    padding: 14,
+    marginBottom: 12,
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: C.red,
+    borderStyle: "dashed",
+  },
   skull: { fontSize: 26, color: C.paper },
-  title: { color: C.paper, fontSize: 15, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5 },
-  sub: { color: "#FFB3B3", fontSize: 12, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
+  title: {
+    color: C.paper,
+    fontSize: 15,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+  },
+  sub: {
+    color: "#FFB3B3",
+    fontSize: 12,
+    fontFamily: MONO,
+    letterSpacing: 1,
+    marginTop: 3,
+  },
   arrow: { color: C.paper, fontSize: 22 },
 });
 
 const WaterNudge = ({ onDismiss }: { onDismiss: () => void }) => (
   <View style={wS.wrap}>
     <Text style={wS.icon}>💧</Text>
-    <Text style={wS.text}>WATER BREAK — hydration helps your body process alcohol.</Text>
+    <Text style={wS.text}>
+      WATER BREAK — hydration helps your body process alcohol.
+    </Text>
     <TouchableOpacity onPress={onDismiss}>
       <Text style={wS.ok}>OK</Text>
     </TouchableOpacity>
   </View>
 );
 const wS = StyleSheet.create({
-  wrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#0A1520", borderWidth: 1, borderColor: "#2A4A6A", borderStyle: "dashed", borderRadius: 2, padding: 12, marginBottom: 12, gap: 10 },
+  wrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0A1520",
+    borderWidth: 1,
+    borderColor: "#2A4A6A",
+    borderStyle: "dashed",
+    borderRadius: 2,
+    padding: 12,
+    marginBottom: 12,
+    gap: 10,
+  },
   icon: { fontSize: 16 },
-  text: { flex: 1, color: "#7EB8D8", fontSize: 12, fontFamily: MONO, letterSpacing: 1, lineHeight: 17 },
-  ok: { color: "#7EB8D8", fontSize: 13, fontFamily: MONO, fontWeight: "900", letterSpacing: 2, paddingLeft: 6 },
+  text: {
+    flex: 1,
+    color: "#7EB8D8",
+    fontSize: 12,
+    fontFamily: MONO,
+    letterSpacing: 1,
+    lineHeight: 17,
+  },
+  ok: {
+    color: "#7EB8D8",
+    fontSize: 13,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 2,
+    paddingLeft: 6,
+  },
 });
 
-const DrinkLogItem = ({ entry, onRemove }: { entry: DrinkEntry; onRemove: () => void }) => {
+const DrinkLogItem = ({
+  entry,
+  onRemove,
+}: {
+  entry: DrinkEntry;
+  onRemove: () => void;
+}) => {
   const min = Math.round((Date.now() - entry.timestamp.getTime()) / 60000);
-  const ago = min < 1 ? "JUST NOW" : min < 60 ? `${min}M AGO` : `${Math.floor(min / 60)}H AGO`;
+  const ago =
+    min < 1
+      ? "JUST NOW"
+      : min < 60
+        ? `${min}M AGO`
+        : `${Math.floor(min / 60)}H AGO`;
   return (
     <View style={liS.row}>
       <Text style={liS.emoji}>{entry.emoji}</Text>
       <View style={liS.info}>
         <Text style={liS.name}>{entry.type}</Text>
-        <Text style={liS.time}>{ago} · Alcohol amount: {entry.standardDrinks.toFixed(1)} drinks</Text>
+        <Text style={liS.time}>
+          {ago} · Alcohol amount: {entry.standardDrinks.toFixed(1)} drinks
+        </Text>
       </View>
-      <TouchableOpacity onPress={onRemove} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+      <TouchableOpacity
+        onPress={onRemove}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      >
         <Text style={liS.x}>✕</Text>
       </TouchableOpacity>
     </View>
   );
 };
 const liS = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", paddingVertical: 11, paddingHorizontal: 12, backgroundColor: C.surfaceAlt, borderRadius: 2, marginBottom: 6, gap: 10, borderLeftWidth: 3, borderLeftColor: C.red },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    backgroundColor: C.surfaceAlt,
+    borderRadius: 2,
+    marginBottom: 6,
+    gap: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: C.red,
+  },
   emoji: { fontSize: 20 },
   info: { flex: 1 },
-  name: { color: C.text, fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
-  time: { color: C.muted, fontSize: 12, fontFamily: MONO, letterSpacing: 1, marginTop: 3 },
+  name: {
+    color: C.text,
+    fontSize: 14,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 2,
+  },
+  time: {
+    color: C.muted,
+    fontSize: 12,
+    fontFamily: MONO,
+    letterSpacing: 1,
+    marginTop: 3,
+  },
   x: { color: C.muted, fontSize: 15 },
 });
 
@@ -382,68 +615,120 @@ const Divider = ({ label }: { label: string }) => (
   </View>
 );
 const dvS = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 14 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginVertical: 14,
+  },
   line: { flex: 1, height: 1, backgroundColor: C.border },
-  lbl: { color: C.muted, fontSize: 12, fontFamily: MONO, letterSpacing: 3, fontWeight: "900" },
+  lbl: {
+    color: C.muted,
+    fontSize: 12,
+    fontFamily: MONO,
+    letterSpacing: 3,
+    fontWeight: "900",
+  },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ── MAIN EXPORT ───────────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export default function DrinkTrackerFAB({ children }: { children: React.ReactNode }) {
-  const { drinks, bac, addDrink: contextAddDrink, removeDrink: contextRemoveDrink, clearDrinks } = useDrinkContext();
+export default function DrinkTrackerFAB({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const {
+    drinks,
+    bac,
+    addDrink: contextAddDrink,
+    removeDrink: contextRemoveDrink,
+    clearDrinks,
+  } = useDrinkContext();
   const [open, setOpen] = useState(false);
-  const [drinkOptionsFromApi, setDrinkOptionsFromApi] = useState<DrinkOption[]>([]);
+  const [drinkOptionsFromApi, setDrinkOptionsFromApi] = useState<DrinkOption[]>(
+    [],
+  );
   const [verifying, setVerifying] = useState(false);
   const [waterNudge, setWaterNudge] = useState(false);
   const [sessionStart] = useState(new Date());
-  const [bacProfile, setBacProfile] = useState<BACProfile>({ weightLbs: DEFAULT_WEIGHT_LBS, gender: DEFAULT_GENDER });
+  const [bacProfile, setBacProfile] = useState<BACProfile>({
+    weightLbs: DEFAULT_WEIGHT_LBS,
+    gender: DEFAULT_GENDER,
+  });
   const [autoAlertSent, setAutoAlertSent] = useState(false);
   const [autoAlertSentCritical, setAutoAlertSentCritical] = useState(false);
   const [drinkSearchQuery, setDrinkSearchQuery] = useState("");
   const [mixedEditorOpen, setMixedEditorOpen] = useState(false);
   const [mixedMixer, setMixedMixer] = useState<MixerOption>(MIXER_OPTIONS[0]);
-  const [mixedLiquor, setMixedLiquor] = useState<LiquorOption>(LIQUOR_OPTIONS[0]);
+  const [mixedLiquor, setMixedLiquor] = useState<LiquorOption>(
+    LIQUOR_OPTIONS[0],
+  );
   const [mixedStrength, setMixedStrength] = useState(50);
   const [mixedSliderWidth, setMixedSliderWidth] = useState(1);
 
   const drinkOptions: DrinkOption[] = [...DRINK_TYPES, ...drinkOptionsFromApi];
   const filteredDrinkOptions = drinkSearchQuery.trim()
-    ? drinkOptions.filter((d) => d.label.toLowerCase().includes(drinkSearchQuery.trim().toLowerCase()))
+    ? drinkOptions.filter((d) =>
+        d.label.toLowerCase().includes(drinkSearchQuery.trim().toLowerCase()),
+      )
     : drinkOptions;
 
-  const pulse  = useRef(new Animated.Value(1)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
   const pressAnim = useRef(new Animated.Value(1)).current;
   const slideY = useRef(new Animated.Value(800)).current;
   const dragY = useRef(new Animated.Value(0)).current;
-  const setStrengthFromX = useCallback((x: number) => {
-    const clamped = Math.max(0, Math.min(mixedSliderWidth, x));
-    const pct = Math.round((clamped / mixedSliderWidth) * 100);
-    setMixedStrength(pct);
-  }, [mixedSliderWidth]);
+  const setStrengthFromX = useCallback(
+    (x: number) => {
+      const clamped = Math.max(0, Math.min(mixedSliderWidth, x));
+      const pct = Math.round((clamped / mixedSliderWidth) * 100);
+      setMixedStrength(pct);
+    },
+    [mixedSliderWidth],
+  );
 
   // Handle Press In/Out for hover-like effect
   const handlePressIn = () => {
-    Animated.spring(pressAnim, { toValue: 0.92, useNativeDriver: true }).start();
+    Animated.spring(pressAnim, {
+      toValue: 0.92,
+      useNativeDriver: true,
+    }).start();
   };
   const handlePressOut = () => {
-    Animated.spring(pressAnim, { toValue: 1, friction: 3, tension: 40, useNativeDriver: true }).start();
+    Animated.spring(pressAnim, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
   };
 
   const panResponder = useRef(
-    PanResponder.create({
+    PanResponder.create({[]
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, g) => g.dy > 5,
-      onPanResponderMove: (_, g) => { if (g.dy > 0) dragY.setValue(g.dy); },
+      onPanResponderMove: (_, g) => {
+        if (g.dy > 0) dragY.setValue(g.dy);
+      },
       onPanResponderRelease: (_, g) => {
         if (g.dy > 80 || g.vy > 0.5) {
-          Animated.timing(dragY, { toValue: 800, duration: 250, useNativeDriver: true }).start(() => {
+          Animated.timing(dragY, {
+            toValue: 800,
+            duration: 250,
+            useNativeDriver: true,
+          }).start(() => {
             setOpen(false);
             dragY.setValue(0);
           });
         } else {
-          Animated.spring(dragY, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
+          Animated.spring(dragY, {
+            toValue: 0,
+            useNativeDriver: true,
+            damping: 20,
+            stiffness: 200,
+          }).start();
         }
       },
     }),
@@ -457,7 +742,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
           const user = JSON.parse(raw);
           const p = user?.profile;
           if (p && typeof p.weightLbs === "number") {
-            setBacProfile({ weightLbs: p.weightLbs, gender: p.gender === "male" ? "male" : "female" });
+            setBacProfile({
+              weightLbs: p.weightLbs,
+              gender: p.gender === "male" ? "male" : "female",
+            });
           }
         }
       } catch {}
@@ -468,8 +756,16 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     if (bac >= BAC_DANGER) {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(pulse, { toValue: 1.18, duration: 500, useNativeDriver: true }),
-          Animated.timing(pulse, { toValue: 1, duration: 500, useNativeDriver: true }),
+          Animated.timing(pulse, {
+            toValue: 1.18,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulse, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
         ]),
       ).start();
     } else {
@@ -479,7 +775,12 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   }, [bac >= BAC_DANGER]);
 
   useEffect(() => {
-    Animated.spring(slideY, { toValue: open ? 0 : 800, useNativeDriver: true, damping: 22, stiffness: 200 }).start();
+    Animated.spring(slideY, {
+      toValue: open ? 0 : 800,
+      useNativeDriver: true,
+      damping: 22,
+      stiffness: 200,
+    }).start();
   }, [open]);
 
   useEffect(() => {
@@ -488,13 +789,16 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
       try {
         const data = await api.getDrinks();
         if (cancelled) return;
-        const list = Array.isArray(data) ? data : (data as { drinks?: unknown[] })?.drinks;
+        const list = Array.isArray(data)
+          ? data
+          : (data as { drinks?: unknown[] })?.drinks;
         if (!Array.isArray(list)) return;
         const options: DrinkOption[] = list.map((d: any) => ({
           id: d._id,
           label: d.name ?? "Drink",
           emoji: CATEGORY_EMOJI[String(d.category ?? "").toLowerCase()] ?? "🍹",
-          standardDrinks: typeof d.standardDrinks === "number" ? d.standardDrinks : 1,
+          standardDrinks:
+            typeof d.standardDrinks === "number" ? d.standardDrinks : 1,
           abv: typeof d.abv === "number" ? d.abv : 5,
         }));
         if (!cancelled) setDrinkOptionsFromApi(options);
@@ -502,56 +806,92 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         if (!cancelled) setDrinkOptionsFromApi([]);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const removeDrink = useCallback((id: string) => contextRemoveDrink(id), [contextRemoveDrink]);
+  const removeDrink = useCallback(
+    (id: string) => contextRemoveDrink(id),
+    [contextRemoveDrink],
+  );
 
-  const addDrink = useCallback(async (dt: DrinkOption) => {
-    const entry: DrinkEntry = {
-      id: Date.now().toString(),
-      type: dt.label,
-      emoji: dt.emoji,
-      standardDrinks: dt.standardDrinks,
-      timestamp: new Date(),
-    };
-    try {
-      await api.logDrink({ drinkId: dt.id, drinkName: dt.label, category: labelToCategory(dt.label), abv: dt.abv, volumeMl: volumeMlFromStandardDrinks(dt.standardDrinks, dt.abv) });
-      contextAddDrink(entry);
-      if ((drinks.length + 1) % 3 === 0) setWaterNudge(true);
-    } catch {}
-  }, [bacProfile, contextAddDrink, drinks.length]);
+  const addDrink = useCallback(
+    async (dt: DrinkOption) => {
+      const entry: DrinkEntry = {
+        id: Date.now().toString(),
+        type: dt.label,
+        emoji: dt.emoji,
+        standardDrinks: dt.standardDrinks,
+        timestamp: new Date(),
+      };
+      try {
+        await api.logDrink({
+          drinkId: dt.id,
+          drinkName: dt.label,
+          category: labelToCategory(dt.label),
+          abv: dt.abv,
+          volumeMl: volumeMlFromStandardDrinks(dt.standardDrinks, dt.abv),
+        });
+        contextAddDrink(entry);
+        if ((drinks.length + 1) % 3 === 0) setWaterNudge(true);
+      } catch {}
+    },
+    [bacProfile, contextAddDrink, drinks.length],
+  );
 
-  const verifyAndAddDrink = useCallback(async (dt: DrinkOption) => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Camera access needed", "Allow camera access for Gemini verification.");
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], allowsEditing: false, quality: 0.8, base64: true });
-    if (result.canceled || !result.assets[0]?.base64 || verifying) return;
-
-    setVerifying(true);
-    try {
-      const analysis = await verifyDrinkWithGemini(result.assets[0].base64, dt.label, result.assets[0].mimeType === "image/png" ? "image/png" : "image/jpeg");
-      await speakText(analysis.voiceMessage);
-      if (!analysis.allowed) {
-        Alert.alert("Verification failed", analysis.summary);
+  const verifyAndAddDrink = useCallback(
+    async (dt: DrinkOption) => {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Camera access needed",
+          "Allow camera access for Gemini verification.",
+        );
         return;
       }
-      addDrink(dt);
-      Alert.alert("Drink verified", analysis.summary);
-    } catch (error) {
-      Alert.alert("Verification error", "Could not verify drink.");
-    } finally { setVerifying(false); }
-  }, [addDrink, verifying]);
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.8,
+        base64: true,
+      });
+      if (result.canceled || !result.assets[0]?.base64 || verifying) return;
+
+      setVerifying(true);
+      try {
+        const analysis = await verifyDrinkWithGemini(
+          result.assets[0].base64,
+          dt.label,
+          result.assets[0].mimeType === "image/png"
+            ? "image/png"
+            : "image/jpeg",
+        );
+        await speakText(analysis.voiceMessage);
+        if (!analysis.allowed) {
+          Alert.alert("Verification failed", analysis.summary);
+          return;
+        }
+        addDrink(dt);
+        Alert.alert("Drink verified", analysis.summary);
+      } catch (error) {
+        Alert.alert("Verification error", "Could not verify drink.");
+      } finally {
+        setVerifying(false);
+      }
+    },
+    [addDrink, verifying],
+  );
 
   const detectAndAddDrinkWithCamera = useCallback(async () => {
     if (verifying) return;
 
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Camera access needed", "Allow camera access for AI drink detection.");
+      Alert.alert(
+        "Camera access needed",
+        "Allow camera access for AI drink detection.",
+      );
       return;
     }
 
@@ -581,7 +921,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         return;
       }
 
-      const detected = resolveDetectedDrinkOption(analysis.matchedDrinkType, drinkOptions);
+      const detected = resolveDetectedDrinkOption(
+        analysis.matchedDrinkType,
+        drinkOptions,
+      );
       if (!detected) {
         Alert.alert(
           "Could not detect drink",
@@ -591,7 +934,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
       }
 
       await addDrink(detected);
-      Alert.alert("Drink detected", `Detected ${detected.label}. ${analysis.summary}`);
+      Alert.alert(
+        "Drink detected",
+        `Detected ${detected.label}. ${analysis.summary}`,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error.";
       Alert.alert("Detection error", `AI camera detect failed. ${message}`);
@@ -604,27 +950,39 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     async (drinkIdToRevoke?: string) => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Camera access needed", "Allow camera access to verify your drink for tampering.");
+        Alert.alert(
+          "Camera access needed",
+          "Allow camera access to verify your drink for tampering.",
+        );
         return;
       }
-      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], allowsEditing: false, quality: 0.8, base64: true });
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.8,
+        base64: true,
+      });
       if (result.canceled || !result.assets[0]?.base64) return;
       setVerifying(true);
       try {
         const analysis = await analyzeDrinkForSpoofing(
           result.assets[0].base64,
-          (result.assets[0].mimeType as "image/jpeg" | "image/png") ?? "image/jpeg"
+          (result.assets[0].mimeType as "image/jpeg" | "image/png") ??
+            "image/jpeg",
         );
         if (!analysis.safe && drinkIdToRevoke) removeDrink(drinkIdToRevoke);
         Alert.alert(
           analysis.safe ? "Drink looks OK" : "Possible concerns",
-          analysis.summary + (analysis.concerns?.length ? "\n\n" + analysis.concerns.join("\n") : "")
+          analysis.summary +
+            (analysis.concerns?.length
+              ? "\n\n" + analysis.concerns.join("\n")
+              : ""),
         );
       } finally {
         setVerifying(false);
       }
     },
-    [removeDrink]
+    [removeDrink],
   );
 
   const showVerifyDrinkPrompt = useCallback(
@@ -635,10 +993,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         [
           { text: "Skip", style: "cancel" },
           { text: "Take photo", onPress: () => promptVerifyDrink(entry.id) },
-        ]
+        ],
       );
     },
-    [promptVerifyDrink]
+    [promptVerifyDrink],
   );
 
   const endSession = () =>
@@ -706,7 +1064,9 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         const rawUser = await AsyncStorage.getItem("user");
         if (rawUser) {
           const parsed = JSON.parse(rawUser) as {
-            profile?: { emergencyContacts?: Array<{ label?: string; phone?: string }> };
+            profile?: {
+              emergencyContacts?: Array<{ label?: string; phone?: string }>;
+            };
           };
           if (Array.isArray(parsed?.profile?.emergencyContacts)) {
             contacts = parsed.profile.emergencyContacts
@@ -734,7 +1094,11 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         }))
         .filter((v) => v.phone.length >= 10 && v.phone !== "1234567890");
       if (recipients.length === 0) {
-        Alert.alert("No emergency contacts", "Add emergency contact phone numbers in Profile.", [{ text: "OK" }]);
+        Alert.alert(
+          "No emergency contacts",
+          "Add emergency contact phone numbers in Profile.",
+          [{ text: "OK" }],
+        );
         return;
       }
       const queryPrefix = Platform.OS === "ios" ? "&" : "?";
@@ -750,24 +1114,30 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         }
       }
       if (!selectedUrl) {
-        Alert.alert("SMS unavailable", "Could not open the Messages app on this device.", [{ text: "OK" }]);
+        Alert.alert(
+          "SMS unavailable",
+          "Could not open the Messages app on this device.",
+          [{ text: "OK" }],
+        );
         return;
       }
       await Linking.openURL(selectedUrl);
-      Alert.alert("Alert ready", `Message prepared for ${selectedLabel}. Tap send in Messages.`, [{ text: "OK" }]);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error.";
       Alert.alert(
-        "Alert failed",
-        message,
+        "Alert ready",
+        `Message prepared for ${selectedLabel}. Tap send in Messages.`,
         [{ text: "OK" }],
       );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error.";
+      Alert.alert("Alert failed", message, [{ text: "OK" }]);
     }
   }, [bac]);
   const startMixedDrinkScan = useCallback(async () => {
     const strengthScale = mixedStrength / 100;
     const estimatedStd = Number((0.6 + strengthScale * 1.4).toFixed(2));
-    const estimatedAbv = Number((mixedLiquor.baseAbv * (0.15 + strengthScale * 0.35)).toFixed(1));
+    const estimatedAbv = Number(
+      (mixedLiquor.baseAbv * (0.15 + strengthScale * 0.35)).toFixed(1),
+    );
     const mixedOption: DrinkOption = {
       label: `MIXED (${mixedLiquor.label} ${mixedMixer.label})`,
       emoji: "🍹",
@@ -778,7 +1148,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
 
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Camera access needed", "Allow camera access to scan your drink for tampering (e.g. clear vodka water vs cloudy).");
+      Alert.alert(
+        "Camera access needed",
+        "Allow camera access to scan your drink for tampering (e.g. clear vodka water vs cloudy).",
+      );
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -791,23 +1164,43 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
 
     setVerifying(true);
     try {
-      const mimeType = (result.assets[0].mimeType === "image/png" ? "image/png" : "image/jpeg") as "image/jpeg" | "image/png";
-      const analysis = await analyzeDrinkForSpoofing(result.assets[0].base64, mimeType);
+      const mimeType = (
+        result.assets[0].mimeType === "image/png" ? "image/png" : "image/jpeg"
+      ) as "image/jpeg" | "image/png";
+      const analysis = await analyzeDrinkForSpoofing(
+        result.assets[0].base64,
+        mimeType,
+      );
 
-      const concernText = analysis.concerns?.length ? "\n\n" + analysis.concerns.join("\n") : "";
+      const concernText = analysis.concerns?.length
+        ? "\n\n" + analysis.concerns.join("\n")
+        : "";
       if (!analysis.safe) {
         Alert.alert(
           "Scan: possible tampering",
-          analysis.summary + concernText + "\n\nWe didn't add this drink. Have a safe alternative or get a new drink.",
-          [{ text: "OK" }]
+          analysis.summary +
+            concernText +
+            "\n\nWe didn't add this drink. Have a safe alternative or get a new drink.",
+          [{ text: "OK" }],
         );
         return;
       }
-      if (expectClear && analysis.concerns?.some((c) => /cloud|opaque|sediment|particle|unusual/i.test(c))) {
+      if (
+        expectClear &&
+        analysis.concerns?.some((c) =>
+          /cloud|opaque|sediment|particle|unusual/i.test(c),
+        )
+      ) {
         Alert.alert(
           "Scan: possible tampering",
-          "This drink should be clear (" + mixedLiquor.label + " + " + mixedMixer.label + "). " + analysis.summary + concernText,
-          [{ text: "OK" }]
+          "This drink should be clear (" +
+            mixedLiquor.label +
+            " + " +
+            mixedMixer.label +
+            "). " +
+            analysis.summary +
+            concernText,
+          [{ text: "OK" }],
         );
         return;
       }
@@ -819,7 +1212,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Scan failed.";
-      Alert.alert("Scan error", msg + " Drink was not added. You can add it manually or try again.");
+      Alert.alert(
+        "Scan error",
+        msg + " Drink was not added. You can add it manually or try again.",
+      );
     } finally {
       setVerifying(false);
     }
@@ -850,7 +1246,12 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     <View style={{ flex: 1 }}>
       {children}
 
-      <Animated.View style={[fabS.wrap, { transform: [{ scale: Animated.multiply(pulse, pressAnim) }] }]}>
+      <Animated.View
+        style={[
+          fabS.wrap,
+          { transform: [{ scale: Animated.multiply(pulse, pressAnim) }] },
+        ]}
+      >
         <TouchableOpacity
           style={[fabS.btn, { backgroundColor: fabBg }]}
           onPressIn={handlePressIn}
@@ -860,53 +1261,83 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         >
           {drinks.length > 0 && (
             <View style={fabS.badge}>
-              <Text style={[fabS.badgeTxt, { color: isDanger ? C.red : C.redDark }]}>{(bac ?? 0).toFixed(2)}</Text>
+              <Text
+                style={[fabS.badgeTxt, { color: isDanger ? C.red : C.redDark }]}
+              >
+                {(bac ?? 0).toFixed(2)}
+              </Text>
             </View>
           )}
           <AddIcon width={40} color="#ff4000" />
         </TouchableOpacity>
       </Animated.View>
 
-      <Modal visible={open} transparent animationType="none" onRequestClose={() => setOpen(false)}>
+      <Modal
+        visible={open}
+        transparent
+        animationType="none"
+        onRequestClose={() => setOpen(false)}
+      >
         {verifying && (
           <View style={shS.verifyingOverlay}>
             <ActivityIndicator size="large" color={C.orange} />
             <Text style={shS.verifyingTxt}>Analyzing drink...</Text>
           </View>
         )}
-        <TouchableOpacity style={shS.overlay} activeOpacity={1} onPress={() => setOpen(false)} />
-        <Animated.View style={[shS.sheet, { transform: [{ translateY: Animated.add(slideY, dragY) }] }]}>
+        <TouchableOpacity
+          style={shS.overlay}
+          activeOpacity={1}
+          onPress={() => setOpen(false)}
+        />
+        <Animated.View
+          style={[
+            shS.sheet,
+            { transform: [{ translateY: Animated.add(slideY, dragY) }] },
+          ]}
+        >
           <View style={shS.handleRow} {...panResponder.panHandlers}>
             <View style={shS.handle} />
             <Text style={shS.handleHint}>drag to close</Text>
           </View>
           {/* ─── UPDATED HEADER WITH IMAGE ASSET ─── */}
           <View style={shS.header}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <Image 
-                source={require("@/assets/images/logo-sipsafe.png")} 
-                style={{ 
-                  width: 100, 
-                  height: 50, 
-                  resizeMode: "contain" 
-                }} 
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+            >
+              <Image
+                source={require("@/assets/images/logo-sipsafe.png")}
+                style={{
+                  width: 100,
+                  height: 50,
+                  resizeMode: "contain",
+                }}
               />
             </View>
-            
+
             <TouchableOpacity style={shS.endBtn} onPress={endSession}>
               <Text style={shS.endBtnTxt}>END</Text>
             </TouchableOpacity>
           </View>
           <View style={shS.ticker}>
             <Text style={shS.tickerTxt} numberOfLines={1}>
-              DRINKS: {drinks.length} ··  SOBER IN: {fmtSober(bac ?? 0)}
+              DRINKS: {drinks.length} ·· SOBER IN: {fmtSober(bac ?? 0)}
             </Text>
           </View>
-          <ScrollView style={shS.scroll} contentContainerStyle={shS.content} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            style={shS.scroll}
+            contentContainerStyle={shS.content}
+            keyboardShouldPersistTaps="handled"
+          >
             {isDanger && <DangerBanner onAlert={sendAlert} />}
             <BACGauge bac={bac} />
             <View style={shS.searchWrap}>
-              <TextInput style={shS.searchInput} placeholder="Search drinks..." placeholderTextColor={C.muted} value={drinkSearchQuery} onChangeText={setDrinkSearchQuery} />
+              <TextInput
+                style={shS.searchInput}
+                placeholder="Search drinks..."
+                placeholderTextColor={C.muted}
+                value={drinkSearchQuery}
+                onChangeText={setDrinkSearchQuery}
+              />
             </View>
             <View style={shS.gridViewport}>
               <ScrollView
@@ -915,14 +1346,21 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
                 contentContainerStyle={shS.grid}
               >
                 {filteredDrinkOptions.map((dt) => (
-                  <TouchableOpacity key={dt.id ?? dt.label} style={shS.drinkBtn} onPress={() => verifyAndAddDrink(dt)}>
+                  <TouchableOpacity
+                    key={dt.id ?? dt.label}
+                    style={shS.drinkBtn}
+                    onPress={() => verifyAndAddDrink(dt)}
+                  >
                     <Text style={shS.drinkEmoji}>{dt.emoji}</Text>
                     <Text style={shS.drinkName}>{dt.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
-            <TouchableOpacity style={shS.aiDetectBtn} onPress={detectAndAddDrinkWithCamera}>
+            <TouchableOpacity
+              style={shS.aiDetectBtn}
+              onPress={detectAndAddDrinkWithCamera}
+            >
               <Text style={shS.aiDetectBtnTxt}>📷 AI CAMERA DETECT DRINK</Text>
             </TouchableOpacity>
             {/* Mixed Drink Builder: liquor selection + strength slider + add action */}
@@ -942,7 +1380,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
                     return (
                       <TouchableOpacity
                         key={opt.label}
-                        style={[shS.mixedLiquorChip, selected && shS.mixedLiquorChipActive]}
+                        style={[
+                          shS.mixedLiquorChip,
+                          selected && shS.mixedLiquorChipActive,
+                        ]}
                         onPress={() => setMixedMixer(opt)}
                         activeOpacity={0.85}
                       >
@@ -965,7 +1406,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
                     return (
                       <TouchableOpacity
                         key={opt.label}
-                        style={[shS.mixedLiquorChip, selected && shS.mixedLiquorChipActive]}
+                        style={[
+                          shS.mixedLiquorChip,
+                          selected && shS.mixedLiquorChipActive,
+                        ]}
                         onPress={() => setMixedLiquor(opt)}
                         activeOpacity={0.85}
                       >
@@ -981,28 +1425,56 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
                     );
                   })}
                 </View>
-                <Text style={shS.mixedTitle}>HOW STRONG DOES IT TASTE? ({mixedStrength}%)</Text>
+                <Text style={shS.mixedTitle}>
+                  HOW STRONG DOES IT TASTE? ({mixedStrength}%)
+                </Text>
                 <View
                   style={shS.sliderTrack}
-                  onLayout={(e) => setMixedSliderWidth(Math.max(1, e.nativeEvent.layout.width))}
+                  onLayout={(e) =>
+                    setMixedSliderWidth(Math.max(1, e.nativeEvent.layout.width))
+                  }
                   onStartShouldSetResponder={() => true}
                   onMoveShouldSetResponder={() => true}
-                  onResponderGrant={(e) => setStrengthFromX(e.nativeEvent.locationX)}
-                  onResponderMove={(e) => setStrengthFromX(e.nativeEvent.locationX)}
+                  onResponderGrant={(e) =>
+                    setStrengthFromX(e.nativeEvent.locationX)
+                  }
+                  onResponderMove={(e) =>
+                    setStrengthFromX(e.nativeEvent.locationX)
+                  }
                 >
-                  <View style={[shS.sliderFill, { width: `${mixedStrength}%` }]} />
-                  <View style={[shS.sliderThumb, { left: Math.max(0, (mixedStrength / 100) * mixedSliderWidth - 9) }]} />
+                  <View
+                    style={[shS.sliderFill, { width: `${mixedStrength}%` }]}
+                  />
+                  <View
+                    style={[
+                      shS.sliderThumb,
+                      {
+                        left: Math.max(
+                          0,
+                          (mixedStrength / 100) * mixedSliderWidth - 9,
+                        ),
+                      },
+                    ]}
+                  />
                 </View>
                 <View style={shS.sliderLabels}>
                   <Text style={shS.sliderLabelTxt}>LIGHT</Text>
                   <Text style={shS.sliderLabelTxt}>STRONG</Text>
                 </View>
-                <TouchableOpacity style={shS.mixedAddBtn} onPress={startMixedDrinkScan} activeOpacity={0.85}>
-                  <Text style={shS.mixedAddBtnTxt}>NEXT: SCAN FOR TAMPERING</Text>
+                <TouchableOpacity
+                  style={shS.mixedAddBtn}
+                  onPress={startMixedDrinkScan}
+                  activeOpacity={0.85}
+                >
+                  <Text style={shS.mixedAddBtnTxt}>
+                    NEXT: SCAN FOR TAMPERING
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
-            <TouchableOpacity style={shS.alertBtn} onPress={sendAlert}><Text style={shS.alertBtnTxt}>📍 ALERT MY FRIENDS</Text></TouchableOpacity>
+            <TouchableOpacity style={shS.alertBtn} onPress={sendAlert}>
+              <Text style={shS.alertBtnTxt}>📍 ALERT MY FRIENDS</Text>
+            </TouchableOpacity>
             <View style={shS.logSection}>
               <Text style={shS.logTitle}>DRINK LOG</Text>
               {drinks.length === 0 ? (
@@ -1010,13 +1482,19 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
               ) : (
                 drinks.map((drink) => (
                   <View key={drink.id} style={shS.logRow}>
-                    <Text style={shS.logDrink}>{drink.emoji} {drink.type}</Text>
-                    <Text style={shS.logBac}>Alcohol: {drink.standardDrinks.toFixed(1)} drinks</Text>
+                    <Text style={shS.logDrink}>
+                      {drink.emoji} {drink.type}
+                    </Text>
+                    <Text style={shS.logBac}>
+                      Alcohol: {drink.standardDrinks.toFixed(1)} drinks
+                    </Text>
                   </View>
                 ))
               )}
             </View>
-            <Text style={shS.disclaimer}>BAC IS AN ESTIMATE. NEVER DRIVE IMPAIRED.</Text>
+            <Text style={shS.disclaimer}>
+              BAC IS AN ESTIMATE. NEVER DRIVE IMPAIRED.
+            </Text>
             <View style={{ height: 48 }} />
           </ScrollView>
         </Animated.View>
@@ -1026,22 +1504,22 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
 }
 
 const fabS = StyleSheet.create({
-  wrap: { 
-    position: "absolute", 
-    bottom: 100, 
-    right: 20, 
-    zIndex: 999 
+  wrap: {
+    position: "absolute",
+    bottom: 100,
+    right: 20,
+    zIndex: 999,
   },
   btn: {
     // CHANGED: Adjusted dimensions to look more like a card
-    width: 80, 
+    width: 80,
     height: 80,
     // CHANGED: borderRadius 20 matches your dashboard statCard aesthetic
-    borderRadius: 20, 
+    borderRadius: 20,
     borderWidth: 0,
     alignItems: "center",
     justifyContent: "center",
-    
+
     // GLOW EFFECT: Shadow remains punchy to define the square shape
     shadowColor: "#ff4000",
     shadowOffset: { width: 0, height: 4 },
@@ -1050,57 +1528,157 @@ const fabS = StyleSheet.create({
     elevation: 15,
   },
   label: {
-    color: "#F0EBE1", 
-    fontSize: 18, 
-    fontFamily: "BebasNeue", 
-    letterSpacing: 1.4, 
-    textAlign: 'center' 
+    color: "#F0EBE1",
+    fontSize: 18,
+    fontFamily: "BebasNeue",
+    letterSpacing: 1.4,
+    textAlign: "center",
   },
-  badge: { 
-    position: "absolute", 
+  badge: {
+    position: "absolute",
     // CHANGED: Negative offsets to make the badge "pop" off the corner
-    top: -5, 
-    right: -5, 
-    backgroundColor: "#F0EBE1", 
+    top: -5,
+    right: -5,
+    backgroundColor: "#F0EBE1",
     borderRadius: 8, // Square-ish badge to match the button
-    paddingHorizontal: 6, 
-    paddingVertical: 3, 
-    borderWidth: 1.5, 
-    borderColor: "#ff4000", 
-    zIndex: 1 
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderWidth: 1.5,
+    borderColor: "#ff4000",
+    zIndex: 1,
   },
   badgeTxt: {
     fontSize: 14,
-    fontFamily: MONO, 
-    fontWeight: "900" 
+    fontFamily: MONO,
+    fontWeight: "900",
   },
 });
 
 const shS = StyleSheet.create({
-  overlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.72)" },
-  verifyingOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 1000, alignItems: "center", justifyContent: "center" },
-  verifyingTxt: { color: "#ff4000", fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2 },
-  sheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#0E0B09", borderTopLeftRadius: 4, borderTopRightRadius: 4, borderTopWidth: 2, borderTopColor: "#ff4000", maxHeight: "90%" },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.72)",
+  },
+  verifyingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    zIndex: 1000,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  verifyingTxt: {
+    color: "#ff4000",
+    fontSize: 14,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 2,
+  },
+  sheet: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#0E0B09",
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    borderTopWidth: 2,
+    borderTopColor: "#ff4000",
+    maxHeight: "90%",
+  },
   handleRow: { alignItems: "center", paddingTop: 10, paddingBottom: 2 },
   handle: { width: 36, height: 3, backgroundColor: "#2C2520", borderRadius: 2 },
-  handleHint: { color: "#2C2520", fontSize: 11, fontFamily: MONO, letterSpacing: 2 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12 },
-  eyebrow: { color: "#6B5E52", fontSize: 12, fontFamily: MONO, letterSpacing: 2 },
-  title: { color: "#F0EBE1", fontSize: 24, fontFamily: MONO, fontWeight: "900", letterSpacing: 3 },
+  handleHint: {
+    color: "#2C2520",
+    fontSize: 11,
+    fontFamily: MONO,
+    letterSpacing: 2,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  eyebrow: {
+    color: "#6B5E52",
+    fontSize: 12,
+    fontFamily: MONO,
+    letterSpacing: 2,
+  },
+  title: {
+    color: "#F0EBE1",
+    fontSize: 24,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 3,
+  },
   titleSub: { color: "#6B5E52", fontSize: 15, fontWeight: "400" },
-  endBtn: { borderWidth: 1.5, borderColor: "#2C2520", borderRadius: 2, paddingHorizontal: 14, paddingVertical: 8 },
-  endBtnTxt: { color: "#6B5E52", fontSize: 13, fontFamily: MONO, fontWeight: "900" },
-  ticker: { backgroundColor: "#ff4000", paddingVertical: 5, paddingHorizontal: 14 },
-  tickerTxt: { color: "#F0EBE1", fontSize: 12, fontFamily: MONO, fontWeight: "700" },
+  endBtn: {
+    borderWidth: 1.5,
+    borderColor: "#2C2520",
+    borderRadius: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  endBtnTxt: {
+    color: "#6B5E52",
+    fontSize: 13,
+    fontFamily: MONO,
+    fontWeight: "900",
+  },
+  ticker: {
+    backgroundColor: "#ff4000",
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+  },
+  tickerTxt: {
+    color: "#F0EBE1",
+    fontSize: 12,
+    fontFamily: MONO,
+    fontWeight: "700",
+  },
   scroll: { flex: 1 },
   content: { padding: 14 },
   searchWrap: { marginBottom: 12 },
-  searchInput: { backgroundColor: "#1E1A17", borderWidth: 1, borderColor: "#2C2520", borderRadius: 2, paddingHorizontal: 14, paddingVertical: 12, color: "#F0EBE1", fontSize: 16, fontFamily: MONO },
+  searchInput: {
+    backgroundColor: "#1E1A17",
+    borderWidth: 1,
+    borderColor: "#2C2520",
+    borderRadius: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: "#F0EBE1",
+    fontSize: 16,
+    fontFamily: MONO,
+  },
   gridViewport: { maxHeight: 260, marginBottom: 14 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
-  drinkBtn: { width: (SW - 52) / 3, backgroundColor: "#161210", borderRadius: 2, borderWidth: 1, borderColor: "#2C2520", alignItems: "center", paddingVertical: 14 },
+  drinkBtn: {
+    width: (SW - 52) / 3,
+    backgroundColor: "#161210",
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: "#2C2520",
+    alignItems: "center",
+    paddingVertical: 14,
+  },
   drinkEmoji: { fontSize: 24, marginBottom: 5 },
-  drinkName: { color: "#F0EBE1", fontSize: 12, fontFamily: MONO, fontWeight: "900", textAlign: "center" },
+  drinkName: {
+    color: "#F0EBE1",
+    fontSize: 12,
+    fontFamily: MONO,
+    fontWeight: "900",
+    textAlign: "center",
+  },
   aiDetectBtn: {
     backgroundColor: "rgba(17,17,17,0.9)",
     borderWidth: 1.5,
@@ -1149,7 +1727,12 @@ const shS = StyleSheet.create({
     letterSpacing: 1.4,
     marginBottom: 8,
   },
-  mixedLiquorGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  mixedLiquorGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
   mixedLiquorChip: {
     borderWidth: 1,
     borderColor: "#2C2520",
@@ -1196,7 +1779,11 @@ const shS = StyleSheet.create({
     borderColor: "#F0EBE1",
     top: 1,
   },
-  sliderLabels: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
+  sliderLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
   sliderLabelTxt: {
     color: "#8B8B8B",
     fontSize: 10,
@@ -1216,13 +1803,63 @@ const shS = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 1.6,
   },
-  alertBtn: { backgroundColor: "#161210", borderWidth: 1.5, borderColor: "#ff4000", borderRadius: 2, paddingVertical: 15, alignItems: "center" },
-  alertBtnTxt: { color: "#ff4000", fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2.5 },
-  logSection: { marginTop: 12, backgroundColor: "#161210", borderWidth: 1, borderColor: "#2C2520", borderRadius: 2, padding: 12 },
-  logTitle: { color: "#F0EBE1", fontSize: 13, fontFamily: MONO, fontWeight: "900", letterSpacing: 1.5, marginBottom: 8 },
+  alertBtn: {
+    backgroundColor: "#161210",
+    borderWidth: 1.5,
+    borderColor: "#ff4000",
+    borderRadius: 2,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  alertBtnTxt: {
+    color: "#ff4000",
+    fontSize: 14,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 2.5,
+  },
+  logSection: {
+    marginTop: 12,
+    backgroundColor: "#161210",
+    borderWidth: 1,
+    borderColor: "#2C2520",
+    borderRadius: 2,
+    padding: 12,
+  },
+  logTitle: {
+    color: "#F0EBE1",
+    fontSize: 13,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
   logEmpty: { color: "#6B5E52", fontSize: 13, fontFamily: MONO },
-  logRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: "#2C2520" },
-  logDrink: { color: "#F0EBE1", fontSize: 13, fontFamily: MONO, fontWeight: "700" },
-  logBac: { color: "#ff4000", fontSize: 13, fontFamily: MONO, fontWeight: "900" },
-  disclaimer: { color: "#2C2520", fontSize: 11, fontFamily: MONO, textAlign: "center", marginTop: 20 },
+  logRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2C2520",
+  },
+  logDrink: {
+    color: "#F0EBE1",
+    fontSize: 13,
+    fontFamily: MONO,
+    fontWeight: "700",
+  },
+  logBac: {
+    color: "#ff4000",
+    fontSize: 13,
+    fontFamily: MONO,
+    fontWeight: "900",
+  },
+  disclaimer: {
+    color: "#2C2520",
+    fontSize: 11,
+    fontFamily: MONO,
+    textAlign: "center",
+    marginTop: 20,
+  },
 });
