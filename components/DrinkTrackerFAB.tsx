@@ -786,14 +786,13 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
           </View>
           <View style={shS.header}>
             <View>
-              <Text style={shS.eyebrow}>// ACTIVE SESSION · {fmtSession(sessionStart)}</Text>
               <Text style={shS.title}>SIP<Text style={{ color: C.red }}>SAFE</Text><Text style={shS.titleSub}> TRACKER</Text></Text>
             </View>
             <TouchableOpacity style={shS.endBtn} onPress={endSession}><Text style={shS.endBtnTxt}>END</Text></TouchableOpacity>
           </View>
           <View style={shS.ticker}>
             <Text style={shS.tickerTxt} numberOfLines={1}>
-              DRINKS: {drinks.length} ·· STD: {(bac ?? 0).toFixed(3)}% ·· SOBER IN: {fmtSober(bac ?? 0)}
+              DRINKS: {drinks.length} ··  SOBER IN: {fmtSober(bac ?? 0)}
             </Text>
           </View>
           <ScrollView style={shS.scroll} contentContainerStyle={shS.content} keyboardShouldPersistTaps="handled">
