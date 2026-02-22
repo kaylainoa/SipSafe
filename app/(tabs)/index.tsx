@@ -2,7 +2,10 @@ import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
-  Animated, Modal,
+  Animated,
+  Image,
+  ImageBackground,
+  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -71,7 +74,11 @@ function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
   const bacPercentage = Math.min((bac / 0.15) * 100, 100);
 
   return (
-    <View style={styles.container}>
+    <ImageBackground
+      source={require('@/assets/images/background.png')}
+      style={styles.container}
+      resizeMode="cover"
+    >
       {/* 1. TOP NAV PILL */}
       <View style={styles.nav}>
         <TouchableOpacity style={styles.inputPill} onPress={onOpenTracker}>
@@ -84,10 +91,13 @@ function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {/* 2. GLITCH LOGO */}
+        {/* 2. SIPSAFE LOGO (above BAC) */}
         <View style={styles.logoContainer}>
-          <Text style={styles.logoTextGlitch}>SIP</Text>
-          <Text style={[styles.logoTextGlitch, { marginLeft: 45, marginTop: -15 }]}>SAFE</Text>
+          <Image
+            source={require('@/assets/images/logo-sipsafe.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
 
         {/* 3. DYNAMIC BAC DISPLAY */}
@@ -139,7 +149,7 @@ function HomePageContent({ onOpenTracker }: { onOpenTracker: () => void }) {
           ))}
         </View>
       </ScrollView>
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -185,7 +195,7 @@ export default function App() {
 
   return (
     <DrinkContext.Provider value={{ bac, drinks, addDrink }}>
-      <View style={{ flex: 1, backgroundColor: '#000' }}>
+      <View style={{ flex: 1 }}>
         <StatusBar barStyle="light-content" />
         <HomePageContent onOpenTracker={() => setOpen(true)} />
 
@@ -218,14 +228,14 @@ export default function App() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   nav: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 60, alignItems: 'center', justifyContent: 'space-between' },
-  inputPill: { flex: 0.9, backgroundColor: '#222', flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 50, borderWidth: 1, borderColor: '#444' },
+  inputPill: { flex: 0.9, backgroundColor: 'rgba(34,34,34,0.9)', flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 50, borderWidth: 1, borderColor: '#444' },
   circleIcon: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#555', marginRight: 10 },
   inputPillText: { color: '#999', fontSize: 14, fontFamily: 'InstrumentSans' },
   navBtn: { color: '#666', fontSize: 14, fontFamily: 'RubikBold' },
   body: { paddingHorizontal: 20, paddingBottom: 120 },
 
-  logoContainer: { marginVertical: 30, alignItems: 'center' },
-  logoTextGlitch: { color: '#fff', fontSize: 70, fontFamily: 'RubikGlitch', lineHeight: 75 },
+  logoContainer: { marginVertical: 24, alignItems: 'center' },
+  logoImage: { width: 220, height: 100 },
 
   bacContainer: { alignItems: 'center', marginBottom: 25 },
   progressBarBackground: { width: '100%', height: 12, backgroundColor: '#222', borderRadius: 6, overflow: 'hidden', marginBottom: 10 },
