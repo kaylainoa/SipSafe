@@ -33,31 +33,30 @@
  */
 
 import { AddIcon } from "@/components/AddIcon";
+import { api } from "@/constants/api";
 import { DrinkEntry, useDrinkContext } from "@/contexts/DrinkContext";
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
 import { speakText } from "@/lib/elevenlabsTTS";
 import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
-import { api } from "@/constants/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    Linking,
-    Modal,
-    PanResponder,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    TextInput,
- 
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Linking,
+  Modal,
+  PanResponder,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const { width: SW } = Dimensions.get("window");
@@ -787,14 +786,13 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
           </View>
           <View style={shS.header}>
             <View>
-              <Text style={shS.eyebrow}>// ACTIVE SESSION · {fmtSession(sessionStart)}</Text>
               <Text style={shS.title}>SIP<Text style={{ color: C.red }}>SAFE</Text><Text style={shS.titleSub}> TRACKER</Text></Text>
             </View>
             <TouchableOpacity style={shS.endBtn} onPress={endSession}><Text style={shS.endBtnTxt}>END</Text></TouchableOpacity>
           </View>
           <View style={shS.ticker}>
             <Text style={shS.tickerTxt} numberOfLines={1}>
-              DRINKS: {drinks.length} ·· STD: {(bac ?? 0).toFixed(3)}% ·· SOBER IN: {fmtSober(bac ?? 0)}
+              DRINKS: {drinks.length} ··  SOBER IN: {fmtSober(bac ?? 0)}
             </Text>
           </View>
           <ScrollView style={shS.scroll} contentContainerStyle={shS.content} keyboardShouldPersistTaps="handled">
@@ -852,7 +850,7 @@ const fabS = StyleSheet.create({
   },
   btn: {
     // CHANGED: Adjusted dimensions to look more like a card
-    width: 90, 
+    width: 80, 
     height: 80,
     // CHANGED: borderRadius 20 matches your dashboard statCard aesthetic
     borderRadius: 20, 
