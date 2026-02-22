@@ -33,6 +33,7 @@
  */
 
 import { AddIcon } from "@/components/AddIcon";
+import { StopIcon } from "@/components/StopIcon";
 import { api } from "@/constants/api";
 import { DrinkEntry, useDrinkContext } from "@/contexts/DrinkContext";
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
@@ -1278,7 +1279,11 @@ export default function DrinkTrackerFAB({
               </Text>
             </View>
           )}
-          <AddIcon width={40} color="#ff4000" />
+          {isDanger ? (
+            <StopIcon width={40} color="#ff4000" />
+          ) : (
+            <AddIcon width={40} color="#ff4000" />
+          )}
         </TouchableOpacity>
       </Animated.View>
 
