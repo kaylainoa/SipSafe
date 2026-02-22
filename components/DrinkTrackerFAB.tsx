@@ -345,7 +345,7 @@ const DrinkLogItem = ({ entry, onRemove }: { entry: DrinkEntry; onRemove: () => 
       <Text style={liS.emoji}>{entry.emoji}</Text>
       <View style={liS.info}>
         <Text style={liS.name}>{entry.type}</Text>
-        <Text style={liS.time}>{ago} · {entry.standardDrinks.toFixed(1)} STD</Text>
+        <Text style={liS.time}>{ago} · Alcohol amount: {entry.standardDrinks.toFixed(1)} drinks</Text>
       </View>
       <TouchableOpacity onPress={onRemove} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
         <Text style={liS.x}>✕</Text>
@@ -765,7 +765,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     setMixedEditorOpen(false);
     Alert.alert(
       "Mixed drink logged",
-      `${mixedLiquor.label} • Strength ${mixedStrength}% • Est. ${estimatedStd.toFixed(2)} standard drinks`,
+      `${mixedLiquor.label} • Strength ${mixedStrength}% • Alcohol amount: ${estimatedStd.toFixed(2)} drinks`,
     );
   }, [addDrink, mixedLiquor, mixedStrength]);
 
@@ -932,7 +932,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
                 drinks.map((drink) => (
                   <View key={drink.id} style={shS.logRow}>
                     <Text style={shS.logDrink}>{drink.emoji} {drink.type}</Text>
-                    <Text style={shS.logBac}>{drink.standardDrinks.toFixed(1)} STD</Text>
+                    <Text style={shS.logBac}>Alcohol: {drink.standardDrinks.toFixed(1)} drinks</Text>
                   </View>
                 ))
               )}
