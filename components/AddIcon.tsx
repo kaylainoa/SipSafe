@@ -1,0 +1,32 @@
+import React from "react";
+import Svg, { G, Line, Path } from "react-native-svg";
+
+const VIEWBOX = { width: 173.94, height: 148.62 };
+
+type AddIconProps = {
+  width?: number;
+  height?: number;
+  color?: string;
+};
+
+export function AddIcon({ width = 36, height, color = "#ff4000" }: AddIconProps) {
+  const h = height ?? (width * VIEWBOX.height) / VIEWBOX.width;
+
+  return (
+    <Svg width={width} height={h} viewBox={`0 0 ${VIEWBOX.width} ${VIEWBOX.height}`}>
+      <G>
+        <Path
+          fill="#fff"
+          d="M0,0h173.94l-11.66,132.78c-.79,8.96-8.29,15.84-17.29,15.84H28.94c-9,0-16.5-6.87-17.29-15.84L0,0Z"
+        />
+        <Path
+          fill="#e6e6e6"
+          d="M158.56,16.36c-.14,34.92-1.91,69.78-4.16,104.56-.6,10.36-9.67,18.39-19.93,18.34-20.96.35-48.24.45-69.22.31-4.26-.1-23.64-.15-27.58-.4-9.47-.7-17.64-8.68-18.13-18.25-2.25-34.78-4.03-69.63-4.16-104.56,5.1,28.61,9,57.33,12.53,86.09.43,3.63,1.53,12.68,1.91,16.18,0,0,.15,1.35.15,1.35.02.27.06.33.08.49.44,2.94,2.52,5.47,5.24,6.67,1.69.81,3.7.84,5.54.77,0,0,2.71-.04,2.71-.04l21.72-.24c20.45-.14,47.43-.04,67.86.29,1.83.07,3.85.04,5.54-.77,2.72-1.19,4.8-3.73,5.24-6.67.02-.16.06-.22.08-.49,0,0,.15-1.35.15-1.35,3.97-34.17,8.41-68.33,14.44-102.27h0Z"
+        />
+      </G>
+      <Line fill="none" stroke={color} strokeWidth={10} strokeMiterlimit={10} x1={48.95} y1={72.07} x2={124.95} y2={72.07} />
+      <Line fill="none" stroke="#000" strokeWidth={18} strokeMiterlimit={10} x1={86.95} y1={110.07} x2={86.95} y2={34.07} />
+      <Line fill="none" stroke="#000" strokeWidth={10} strokeMiterlimit={10} x1={48.95} y1={72.07} x2={124.95} y2={72.07} />
+    </Svg>
+  );
+}

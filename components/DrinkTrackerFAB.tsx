@@ -32,6 +32,7 @@
  * ────────────────────────────────────────────────────────────────────────────
  */
 
+import { AddIcon } from "@/components/AddIcon";
 import { DrinkEntry, useDrinkContext } from "@/contexts/DrinkContext";
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
 import { speakText } from "@/lib/elevenlabsTTS";
@@ -767,7 +768,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
               <Text style={[fabS.badgeTxt, { color: isDanger ? C.red : C.redDark }]}>{(bac ?? 0).toFixed(2)}</Text>
             </View>
           )}
-          <Text style={fabS.label}>TRACK</Text>
+          <AddIcon width={40} color="#ff4000" />
         </TouchableOpacity>
       </Animated.View>
 
