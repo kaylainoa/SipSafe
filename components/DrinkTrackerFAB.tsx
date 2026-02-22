@@ -88,6 +88,10 @@ type DrinkOption = {
   standardDrinks: number;
   abv: number;
 };
+type LiquorOption = {
+  label: string;
+  baseAbv: number;
+};
 
 const DRINK_TYPES: DrinkOption[] = [
   { label: "BEER", emoji: "🍺", standardDrinks: 1.0, abv: 5 },
@@ -106,6 +110,14 @@ const CATEGORY_EMOJI: Record<string, string> = {
   cider: "🍎",
   "non-alcoholic": "🫧",
 };
+const LIQUOR_OPTIONS: LiquorOption[] = [
+  { label: "VODKA", baseAbv: 40 },
+  { label: "TEQUILA", baseAbv: 40 },
+  { label: "WHISKEY", baseAbv: 40 },
+  { label: "RUM", baseAbv: 40 },
+  { label: "GIN", baseAbv: 40 },
+  { label: "BRANDY", baseAbv: 38 },
+];
 
 function resolveDetectedDrinkOption(
   detectedType: string,
@@ -378,6 +390,10 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   const [autoAlertSent, setAutoAlertSent] = useState(false);
   const [autoAlertSentCritical, setAutoAlertSentCritical] = useState(false);
   const [drinkSearchQuery, setDrinkSearchQuery] = useState("");
+  const [mixedEditorOpen, setMixedEditorOpen] = useState(false);
+  const [mixedLiquor, setMixedLiquor] = useState<LiquorOption>(LIQUOR_OPTIONS[0]);
+  const [mixedStrength, setMixedStrength] = useState(50);
+  const [mixedSliderWidth, setMixedSliderWidth] = useState(1);
 
   const drinkOptions: DrinkOption[] = [...DRINK_TYPES, ...drinkOptionsFromApi];
   const filteredDrinkOptions = drinkSearchQuery.trim()
@@ -388,6 +404,11 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
   const pressAnim = useRef(new Animated.Value(1)).current;
   const slideY = useRef(new Animated.Value(800)).current;
   const dragY = useRef(new Animated.Value(0)).current;
+  const setStrengthFromX = useCallback((x: number) => {
+    const clamped = Math.max(0, Math.min(mixedSliderWidth, x));
+    const pct = Math.round((clamped / mixedSliderWidth) * 100);
+    setMixedStrength(pct);
+  }, [mixedSliderWidth]);
 
   // Handle Press In/Out for hover-like effect
   const handlePressIn = () => {
@@ -618,6 +639,7 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
           setWaterNudge(false);
           setAutoAlertSent(false);
           setAutoAlertSentCritical(false);
+          setMixedEditorOpen(false);
           setOpen(false);
         },
       },
@@ -729,6 +751,23 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
       );
     }
   }, [bac]);
+  const addMixedDrink = useCallback(async () => {
+    const strengthScale = mixedStrength / 100;
+    const estimatedStd = Number((0.6 + strengthScale * 1.4).toFixed(2));
+    const estimatedAbv = Number((mixedLiquor.baseAbv * (0.15 + strengthScale * 0.35)).toFixed(1));
+    const mixedOption: DrinkOption = {
+      label: `MIXED (${mixedLiquor.label})`,
+      emoji: "🍹",
+      standardDrinks: estimatedStd,
+      abv: estimatedAbv,
+    };
+    await addDrink(mixedOption);
+    setMixedEditorOpen(false);
+    Alert.alert(
+      "Mixed drink logged",
+      `${mixedLiquor.label} • Strength ${mixedStrength}% • Est. ${estimatedStd.toFixed(2)} standard drinks`,
+    );
+  }, [addDrink, mixedLiquor, mixedStrength]);
 
   const status = getBACStatus(bac);
   const totalStd = drinks.reduce((s, d) => s + d.standardDrinks, 0);
@@ -830,6 +869,60 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
             <TouchableOpacity style={shS.aiDetectBtn} onPress={detectAndAddDrinkWithCamera}>
               <Text style={shS.aiDetectBtnTxt}>📷 AI CAMERA DETECT DRINK</Text>
             </TouchableOpacity>
+            {/* Mixed Drink Builder: liquor selection + strength slider + add action */}
+            <TouchableOpacity
+              style={shS.mixedBtn}
+              onPress={() => setMixedEditorOpen((v) => !v)}
+              activeOpacity={0.85}
+            >
+              <Text style={shS.mixedBtnTxt}>🍸 MIXED DRINK BUILDER</Text>
+            </TouchableOpacity>
+            {mixedEditorOpen && (
+              <View style={shS.mixedPanel}>
+                <Text style={shS.mixedTitle}>WHAT'S THE LIQUOR?</Text>
+                <View style={shS.mixedLiquorGrid}>
+                  {LIQUOR_OPTIONS.map((opt) => {
+                    const selected = opt.label === mixedLiquor.label;
+                    return (
+                      <TouchableOpacity
+                        key={opt.label}
+                        style={[shS.mixedLiquorChip, selected && shS.mixedLiquorChipActive]}
+                        onPress={() => setMixedLiquor(opt)}
+                        activeOpacity={0.85}
+                      >
+                        <Text
+                          style={[
+                            shS.mixedLiquorChipTxt,
+                            selected && shS.mixedLiquorChipTxtActive,
+                          ]}
+                        >
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={shS.mixedTitle}>HOW STRONG DOES IT TASTE? ({mixedStrength}%)</Text>
+                <View
+                  style={shS.sliderTrack}
+                  onLayout={(e) => setMixedSliderWidth(Math.max(1, e.nativeEvent.layout.width))}
+                  onStartShouldSetResponder={() => true}
+                  onMoveShouldSetResponder={() => true}
+                  onResponderGrant={(e) => setStrengthFromX(e.nativeEvent.locationX)}
+                  onResponderMove={(e) => setStrengthFromX(e.nativeEvent.locationX)}
+                >
+                  <View style={[shS.sliderFill, { width: `${mixedStrength}%` }]} />
+                  <View style={[shS.sliderThumb, { left: Math.max(0, (mixedStrength / 100) * mixedSliderWidth - 9) }]} />
+                </View>
+                <View style={shS.sliderLabels}>
+                  <Text style={shS.sliderLabelTxt}>LIGHT</Text>
+                  <Text style={shS.sliderLabelTxt}>STRONG</Text>
+                </View>
+                <TouchableOpacity style={shS.mixedAddBtn} onPress={addMixedDrink} activeOpacity={0.85}>
+                  <Text style={shS.mixedAddBtnTxt}>ADD MIXED DRINK</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             <TouchableOpacity style={shS.alertBtn} onPress={sendAlert}><Text style={shS.alertBtnTxt}>📍 ALERT MY FRIENDS</Text></TouchableOpacity>
             <View style={shS.logSection}>
               <Text style={shS.logTitle}>DRINK LOG</Text>
@@ -944,6 +1037,105 @@ const shS = StyleSheet.create({
     fontFamily: MONO,
     fontWeight: "900",
     letterSpacing: 1.5,
+  },
+  mixedBtn: {
+    backgroundColor: "#161210",
+    borderWidth: 1.5,
+    borderColor: "#ff4000",
+    borderRadius: 2,
+    paddingVertical: 13,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  mixedBtnTxt: {
+    color: "#F0EBE1",
+    fontSize: 14,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+  },
+  mixedPanel: {
+    backgroundColor: "rgba(17,17,17,0.92)",
+    borderWidth: 1,
+    borderColor: "#2C2520",
+    borderRadius: 2,
+    padding: 12,
+    marginBottom: 10,
+  },
+  mixedTitle: {
+    color: "#F0EBE1",
+    fontSize: 12,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 1.4,
+    marginBottom: 8,
+  },
+  mixedLiquorGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  mixedLiquorChip: {
+    borderWidth: 1,
+    borderColor: "#2C2520",
+    borderRadius: 2,
+    backgroundColor: "#161210",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  mixedLiquorChipActive: {
+    borderColor: "#ff4000",
+    backgroundColor: "rgba(255,64,0,0.12)",
+  },
+  mixedLiquorChipTxt: {
+    color: "#F0EBE1",
+    fontSize: 12,
+    fontFamily: MONO,
+    letterSpacing: 1.2,
+  },
+  mixedLiquorChipTxtActive: { color: "#ff4000" },
+  sliderTrack: {
+    height: 22,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#2C2520",
+    backgroundColor: "#111",
+    overflow: "hidden",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+  sliderFill: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "rgba(255,64,0,0.35)",
+  },
+  sliderThumb: {
+    position: "absolute",
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#ff4000",
+    borderWidth: 1,
+    borderColor: "#F0EBE1",
+    top: 1,
+  },
+  sliderLabels: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
+  sliderLabelTxt: {
+    color: "#8B8B8B",
+    fontSize: 10,
+    fontFamily: MONO,
+    letterSpacing: 1.5,
+  },
+  mixedAddBtn: {
+    backgroundColor: "#ff4000",
+    borderRadius: 2,
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  mixedAddBtnTxt: {
+    color: "#F0EBE1",
+    fontSize: 13,
+    fontFamily: MONO,
+    fontWeight: "900",
+    letterSpacing: 1.6,
   },
   alertBtn: { backgroundColor: "#161210", borderWidth: 1.5, borderColor: "#ff4000", borderRadius: 2, paddingVertical: 15, alignItems: "center" },
   alertBtnTxt: { color: "#ff4000", fontSize: 14, fontFamily: MONO, fontWeight: "900", letterSpacing: 2.5 },
