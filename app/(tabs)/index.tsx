@@ -207,7 +207,7 @@ function HomePageContent() {
         <View style={styles.actionButtonsWrapper}>
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={styles.cardTitle}>Safe Streak</Text>
+              <Text style={styles.cardTitle}>Save Streak</Text>
               <Text style={styles.cardValue}>14 DAYS</Text>
             </View>
             <TouchableOpacity
