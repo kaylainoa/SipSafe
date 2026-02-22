@@ -182,7 +182,6 @@ function HomePageContent() {
       <View style={styles.nav}>
         <View style={styles.navSpacer} />
         <TouchableOpacity onPress={() => router.push("/profile")}>
-          <Text style={styles.navBtn}>Profile</Text>
         </TouchableOpacity>
       </View>
 
