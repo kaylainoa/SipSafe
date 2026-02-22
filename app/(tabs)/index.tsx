@@ -1,11 +1,16 @@
 import { api } from '@/constants/api';
 import { useDrinkContext } from '@/contexts/DrinkContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  Alert,
   Image,
   ImageBackground,
+  Linking,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -26,6 +31,7 @@ function HomePageContent() {
   const router = useRouter();
   const { bac } = useDrinkContext();
   const [weeklyCounts, setWeeklyCounts] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+  const safeBac = bac ?? 0;
 
   const loadWeekly = useCallback(async () => {
     try {
@@ -71,6 +77,95 @@ function HomePageContent() {
     loadWeekly();
   }, [loadWeekly]);
 
+  const handleAlertFriend = useCallback(async () => {
+    let locationText = "Location unavailable.";
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const lat = position.coords.latitude.toFixed(6);
+        const lng = position.coords.longitude.toFixed(6);
+        locationText = `Coordinates: ${lat}, ${lng}. Map: https://maps.google.com/?q=${lat},${lng}`;
+      }
+    } catch {
+      // keep fallback
+    }
+
+    const alertMessage =
+      safeBac >= 0.3
+        ? `SipSafe alert: I had DANGEROUS amount of alcohol, please help me. BAC: ${safeBac.toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`
+        : safeBac >= 0.15
+          ? `SipSafe alert: I had a HIGH amount of alcohol intake, I may need help. BAC: ${safeBac.toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`
+          : `SipSafe alert: I may need help. BAC: ${safeBac.toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`;
+
+    try {
+      type Contact = { label: string; phone: string };
+      let contacts: Contact[] = [];
+
+      try {
+        const me = await api.getMe();
+        if (me?.profile != null && !me.error && Array.isArray(me.profile?.emergencyContacts)) {
+          const asUser = { id: me.id, email: me.email, profile: me.profile };
+          await AsyncStorage.setItem("user", JSON.stringify(asUser));
+          contacts = me.profile.emergencyContacts
+            .map((c: { label?: string; phone?: string }) => ({
+              label: String(c?.label ?? "").trim(),
+              phone: String(c?.phone ?? "").trim(),
+            }))
+            .filter((c: Contact) => c.label.length > 0 && c.phone.length > 0);
+        }
+      } catch {
+        // fallback to cache
+      }
+
+      if (contacts.length === 0) {
+        const rawUser = await AsyncStorage.getItem("user");
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser) as {
+            profile?: { emergencyContacts?: Array<{ label?: string; phone?: string }> };
+          };
+          if (Array.isArray(parsed?.profile?.emergencyContacts)) {
+            contacts = parsed.profile.emergencyContacts
+              .map((c: { label?: string; phone?: string }) => ({
+                label: String(c?.label ?? "").trim(),
+                phone: String(c?.phone ?? "").trim(),
+              }))
+              .filter((c: Contact) => c.label.length > 0 && c.phone.length > 0);
+          }
+        }
+      }
+
+      if (contacts.length === 0) {
+        Alert.alert("No emergency contacts", "Add at least one emergency contact in Profile.");
+        return;
+      }
+
+      const recipients = contacts
+        .map((c) => ({ label: c.label, phone: c.phone.replace(/[^\d+]/g, "") }))
+        .filter((c) => c.phone.length >= 10 && c.phone !== "1234567890");
+
+      if (recipients.length === 0) {
+        Alert.alert("No emergency contacts", "Add a valid emergency contact phone number in Profile.");
+        return;
+      }
+
+      const queryPrefix = Platform.OS === "ios" ? "&" : "?";
+      const first = recipients[0];
+      const smsUrl = `sms:${first.phone}${queryPrefix}body=${encodeURIComponent(alertMessage)}`;
+      const canOpen = await Linking.canOpenURL(smsUrl);
+      if (!canOpen) {
+        Alert.alert("SMS unavailable", "Could not open Messages on this device.");
+        return;
+      }
+      await Linking.openURL(smsUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error.";
+      Alert.alert("Alert failed", message);
+    }
+  }, [safeBac]);
+
   const maxWeekly = Math.max(1, ...weeklyCounts);
   const barHeight = (count: number) => Math.max(2, (count / maxWeekly) * 80);
 
@@ -115,10 +210,14 @@ function HomePageContent() {
               <Text style={styles.cardTitle}>Safe Streak</Text>
               <Text style={styles.cardValue}>14 DAYS</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: 'rgba(26,26,26,0.7)' }]}>
+            <TouchableOpacity
+              style={[styles.statCard, { backgroundColor: 'rgba(26,26,26,0.7)' }]}
+              onPress={handleAlertFriend}
+              activeOpacity={0.85}
+            >
               <Text style={styles.cardTitle}>Alert</Text>
               <Text style={styles.cardValue}>Text a friend</Text>
-            </View>
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
