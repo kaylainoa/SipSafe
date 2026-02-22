@@ -406,9 +406,7 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.navPill}>
-          <Text style={styles.navPillText}>PROFILE DOSSIER</Text>
-        </View>
+        
 
         <View style={styles.avatarWrapper}>
           <View style={styles.avatar}>
@@ -496,21 +494,21 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 40,
-    paddingTop: 12,
+    paddingTop: 40,
   },
   navPill: {
     alignSelf: "flex-start",
     backgroundColor: "rgba(34,34,34,0.92)",
     borderWidth: 1,
     borderColor: "#3A3A3A",
-    borderRadius: 40,
+    borderRadius: 0,
     paddingHorizontal: 14,
     paddingVertical: 8,
     marginBottom: 18,
   },
   navPillText: {
     color: "#A8A8A8",
-    fontSize: 12,
+    fontSize: 15,
     fontFamily: "BebasNeue",
     letterSpacing: 1.5,
   },
@@ -535,7 +533,7 @@ const styles = StyleSheet.create({
   },
   avatarInitials: {
     color: TEXT,
-    fontSize: 42,
+    fontSize: 50,
     fontFamily: "BebasNeue",
     fontWeight: "700",
     letterSpacing: 2,
@@ -550,7 +548,7 @@ const styles = StyleSheet.create({
   },
   subWelcome: {
     color: "#7E7E7E",
-    fontSize: 11,
+    fontSize: 15,
     fontFamily: "BebasNeue",
     textAlign: "center",
     marginBottom: 20,
@@ -558,7 +556,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "rgba(17,17,17,0.88)",
-    borderRadius: 22,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: "#2F2F2F",
     paddingHorizontal: 20,
@@ -572,7 +570,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     color: TEXT,
-    fontSize: 13,
+    fontSize: 20,
     fontFamily: "BebasNeue",
     letterSpacing: 1.1,
     flex: 1,
@@ -582,7 +580,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     color: TEXT,
-    fontSize: 14,
+    fontSize: 20,
     fontFamily: "BebasNeue",
     letterSpacing: 0.7,
     textAlign: "right",
@@ -604,7 +602,7 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     backgroundColor: ORANGE,
-    borderRadius: 18,
+    borderRadius: 0,
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 16,
@@ -617,7 +615,7 @@ const styles = StyleSheet.create({
   },
   editBtnText: {
     color: TEXT,
-    fontSize: 16,
+    fontSize: 20,
     fontFamily: "BebasNeue",
     fontWeight: "700",
     letterSpacing: 2.2,
@@ -642,7 +640,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: MUTED,
-    fontSize: 16,
+    fontSize: 20,
     fontFamily: "BebasNeue",
   },
   // ── Modal Styles (No changes below) ──
@@ -672,12 +670,12 @@ const styles = StyleSheet.create({
   },
   modalClose: {
     color: MUTED,
-    fontSize: 18,
+    fontSize: 20,
     padding: 4,
   },
   sectionTitle: {
     color: ORANGE,
-    fontSize: 15,
+    fontSize: 25,
     fontFamily: "BebasNeue",
     marginTop: 20,
     marginBottom: 10,
@@ -688,18 +686,18 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: MUTED,
-    fontSize: 12,
+    fontSize: 20,
     marginBottom: 6,
     letterSpacing: 0.6,
     fontFamily: "BebasNeue",
   },
   textInput: {
     backgroundColor: "#252525",
-    borderRadius: 10,
+    borderRadius: 0,
     paddingHorizontal: 14,
     paddingVertical: 12,
     color: TEXT,
-    fontSize: 15,
+    fontSize: 18,
     fontFamily: "BebasNeue",
     borderWidth: 1,
     borderColor: BORDER,
@@ -714,35 +712,35 @@ const styles = StyleSheet.create({
   },
   removeBtn: {
     backgroundColor: "#2E2E2E",
-    borderRadius: 8,
+    borderRadius: 0,
     padding: 10,
   },
   removeBtnText: {
     color: ORANGE,
-    fontSize: 14,
+    fontSize: 24,
   },
   addContactBtn: {
     borderWidth: 1,
     borderColor: ORANGE,
-    borderRadius: 10,
+    borderRadius: 0,
     paddingVertical: 12,
     alignItems: "center",
     marginBottom: 20,
   },
   addContactText: {
     color: ORANGE,
-    fontSize: 15,
+    fontSize: 20,
     fontFamily: "BebasNeue",
   },
   saveBtn: {
     backgroundColor: ORANGE,
-    borderRadius: 14,
+    borderRadius: 0,
     paddingVertical: 16,
     alignItems: "center",
   },
   saveBtnText: {
     color: TEXT,
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: "BebasNeue",
   },
 });
