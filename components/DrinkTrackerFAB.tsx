@@ -35,7 +35,6 @@
 import { analyzeDrinkForSpoofing } from "@/lib/drinkSpoofingDetection";
 import { speakText } from "@/lib/elevenlabsTTS";
 import { verifyDrinkWithGemini } from "@/lib/geminiDrinkVerification";
-import { getEmergencyContactsFromStorage } from "@/lib/profileStorage";
 import { api } from "@/constants/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
@@ -578,7 +577,45 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
     }
     const alertMessage = `SipSafe alert: I may need help. BAC: ${bac.toFixed(3)}%. Time: ${new Date().toLocaleString()}. ${locationText}`;
     try {
-      const contacts = await getEmergencyContactsFromStorage();
+      type Contact = { label: string; phone: string };
+      let contacts: Contact[] = [];
+
+      // Always prefer current account profile from backend.
+      try {
+        const me = await api.getMe();
+        if (me?.profile != null && !me.error) {
+          const asUser = { id: me.id, email: me.email, profile: me.profile };
+          await AsyncStorage.setItem("user", JSON.stringify(asUser));
+          if (Array.isArray(me.profile?.emergencyContacts)) {
+            contacts = me.profile.emergencyContacts
+              .map((c: { label?: string; phone?: string }) => ({
+                label: String(c?.label ?? "").trim(),
+                phone: String(c?.phone ?? "").trim(),
+              }))
+              .filter((c: Contact) => c.label.length > 0 && c.phone.length > 0);
+          }
+        }
+      } catch {
+        // Fall back to locally cached logged-in user profile.
+      }
+
+      if (contacts.length === 0) {
+        const rawUser = await AsyncStorage.getItem("user");
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser) as {
+            profile?: { emergencyContacts?: Array<{ label?: string; phone?: string }> };
+          };
+          if (Array.isArray(parsed?.profile?.emergencyContacts)) {
+            contacts = parsed.profile.emergencyContacts
+              .map((c: { label?: string; phone?: string }) => ({
+                label: String(c?.label ?? "").trim(),
+                phone: String(c?.phone ?? "").trim(),
+              }))
+              .filter((c: Contact) => c.label.length > 0 && c.phone.length > 0);
+          }
+        }
+      }
+
       if (contacts.length === 0) {
         Alert.alert(
           "No emergency contacts",
@@ -588,20 +625,33 @@ export default function DrinkTrackerFAB({ children }: { children: React.ReactNod
         return;
       }
       const recipients = contacts
-        .map((c) => c.phone.replace(/[^\d+]/g, ""))
-        .filter((v) => v.length > 0);
+        .map((c) => ({
+          label: c.label,
+          phone: c.phone.replace(/[^\d+]/g, ""),
+        }))
+        .filter((v) => v.phone.length >= 10 && v.phone !== "1234567890");
       if (recipients.length === 0) {
         Alert.alert("No emergency contacts", "Add emergency contact phone numbers in Profile.", [{ text: "OK" }]);
         return;
       }
       const queryPrefix = Platform.OS === "ios" ? "&" : "?";
-      const smsUrl = `sms:${recipients.join(",")}${queryPrefix}body=${encodeURIComponent(alertMessage)}`;
-      const canOpen = await Linking.canOpenURL(smsUrl);
-      if (!canOpen) {
+      let selectedUrl: string | null = null;
+      let selectedLabel = "Emergency contact";
+      for (const recipient of recipients) {
+        const url = `sms:${recipient.phone}${queryPrefix}body=${encodeURIComponent(alertMessage)}`;
+        const canOpen = await Linking.canOpenURL(url);
+        if (canOpen) {
+          selectedUrl = url;
+          selectedLabel = recipient.label || "Emergency contact";
+          break;
+        }
+      }
+      if (!selectedUrl) {
         Alert.alert("SMS unavailable", "Could not open the Messages app on this device.", [{ text: "OK" }]);
         return;
       }
-      await Linking.openURL(smsUrl);
+      await Linking.openURL(selectedUrl);
+      Alert.alert("Alert ready", `Message prepared for ${selectedLabel}. Tap send in Messages.`, [{ text: "OK" }]);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error.";
       Alert.alert(
