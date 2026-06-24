@@ -1,50 +1,50 @@
-# Welcome to your Expo app 👋
+# SipSafe
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> Best Use of Digital Ocean — WiNGHacks 2026
 
-## Get started
+A mobile app that helps you drink safer. SipSafe uses AI-powered drink verification, real-time BAC estimation, and emergency contact alerts to keep you and your crew safe on a night out.
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+- **AI Drink Verification** — Snap a photo of your drink and Google Gemini vision AI checks for signs of tampering, spiking, or spoofing
+- **Live BAC Estimation** — Real-time blood alcohol content tracking using the Widmark formula, calibrated to your weight and gender
+- **Drink Logging** — Log drinks by type and track them through the night
+- **Night Receipt** — A receipt-style summary of last night's drinks with quantity and BAC contribution per drink
+- **Consumption Analytics** — Bar chart and trend breakdown across 1D / 1W / 1M / 1Y / All time ranges
+- **Emergency Alerts** — One-tap SMS to your saved emergency contacts
+- **Voice Feedback** — ElevenLabs TTS reads verification results aloud after each scan
 
-2. Start the app
+## BAC Calculation
 
-   ```bash
-   npx expo start
-   ```
+BAC is estimated using the [Widmark formula](https://en.wikipedia.org/wiki/Blood_alcohol_content#Estimation_by_intake):
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+BAC = (alcohol_grams / (weight_kg × 1000 × r)) × 100 − (hours_elapsed × 0.015)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Where `r` = 0.73 for male, 0.66 for female. The estimate refreshes every minute and resets when you clear your drink list.
 
-## Learn more
+## AI Drink Verification
 
-To learn more about developing your project with Expo, look at the following resources:
+When you scan a drink, SipSafe sends the photo to Gemini and receives a structured response with:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- `match` — does the drink match what you said you ordered?
+- `spoofingLikely` — is this a screen replay, printed image, or staged photo?
+- `druggingLikely` — are there signs of powder, residue, or unusual cloudiness?
+- `voiceMessage` — a short spoken result read aloud via ElevenLabs
 
-## Join the community
+## API Endpoints
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Login and get JWT |
+| GET | `/api/auth/me` | Get current user profile |
+| PATCH | `/api/auth/me` | Update profile |
+| GET | `/api/drinks` | List available drink types |
+| POST | `/api/drinklogs` | Log a drink |
+| GET | `/api/drinklogs` | Get drink history |
+| GET | `/api/drinklogs/stats` | Get drink stats |
+| GET | `/api/drinklogs/analytics?range=1w` | Get bucketed analytics |
+| POST | `/api/alerts/emergency-sms` | Send emergency SMS |
+| POST | `/api/identifyDrink` | Identify drink from photo |
