@@ -14,6 +14,17 @@ A mobile app that helps you drink safer. SipSafe uses AI-powered drink verificat
 - **Emergency Alerts** — One-tap SMS to your saved emergency contacts
 - **Voice Feedback** — ElevenLabs TTS reads verification results aloud after each scan
 
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Mobile app | React Native + Expo (SDK 54), Expo Router |
+| Language | TypeScript |
+| Backend | Express.js + MongoDB (Mongoose) + JWT auth |
+| Hosting | DigitalOcean App Platform |
+| AI vision | Google Gemini (gemini-1.5-flash / gemini-2.5-flash) |
+| TTS | ElevenLabs |
+
 ## BAC Calculation
 
 BAC is estimated using the [Widmark formula](https://en.wikipedia.org/wiki/Blood_alcohol_content#Estimation_by_intake):
